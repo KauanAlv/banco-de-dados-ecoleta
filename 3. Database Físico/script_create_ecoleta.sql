@@ -169,9 +169,10 @@ references	tbl_estabelecimento(id)
 
 -- Tabela de Histórico do Status do Resíduo
 create table tbl_status_residuo_historico (
-id int not null auto_increment primary key,
-id_residuo int not null,
-id_status_residuo int not null,
+id 					int not null auto_increment primary key,
+id_residuo 			int not null,
+id_status_residuo 	int not null,
+data_hora_status 	datetime not null default current_timestamp,
 
 constraint	FK_RESIDUO_STATUSRESIDUOHISTORICO
 foreign key	(id_residuo)
@@ -207,6 +208,7 @@ create table tbl_status_oferta_historico (
 id 					int not null auto_increment primary key,
 id_oferta_inicial 	int not null,
 id_status_oferta 	int not null,
+data_hora_status 	datetime not null default current_timestamp,
 
 constraint	FK_OFERTAINICIAL_STATUSOFERTAHISTORICO
 foreign key	(id_oferta_inicial)
@@ -268,6 +270,7 @@ create table tbl_status_coleta_historico (
 id 					int not null auto_increment primary key,
 id_coleta 			int not null,
 id_status_coleta 	int not null,
+data_hora_status 	datetime not null default current_timestamp,
 
 constraint	FK_COLETA_STATUSCOLETAHISTORICO
 foreign key	(id_coleta)
