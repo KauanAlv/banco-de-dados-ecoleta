@@ -56,47 +56,8 @@ where tbl_empresa_coletora.id = 2;
 select * from vw_perfil_empresa_coletora;
 
 ##################### Select para a tela home #####################
-select * from tbl_residuo;
-select * from tbl_status_residuo;
-
-select 
-	(
-		select
-			count(distinct tbl_status_residuo_historico.id_residuo)
-		from tbl_status_residuo_historico
-			inner join tbl_status_residuo
-				on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
-		where tbl_status_residuo.status = "Disponível"
-    ) as residuos_disponiveis,
-    (
-		select
-			coalesce(sum(tbl_residuo.quantidade), 0) -- Se não tiver dados na tabela, o resultado fica 0
-		from tbl_residuo
-			inner join tbl_status_residuo_historico
-				on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
-			inner join tbl_status_residuo
-				on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
-	) as soma_total_quantidade,
-    (
-		select count(*) from tbl_oferta_inicial
-    ) as ofertas_recebidas,
-    (
-		select
-			count(distinct tbl_coleta.id)
-		from tbl_coleta
-			inner join tbl_status_coleta_historico
-				on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
-			inner join tbl_status_coleta
-				on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
-		where tbl_status_coleta.status = "Agendada"
-    ) as coletas_agendadas;
-    
-
-
-
-
-### FALTA TERMINAR ###
-#create view vw_home_estabelecimento as
+-- VIEW PARA O RESUMO DA HOME ---
+create view vw_home_estabelecimento as
 select
     tbl_estabelecimento.id as id_estabelecimento,
     (
@@ -129,15 +90,13 @@ select
 
     ) as residuos_disponiveis,
 
-    (
-        -- Soma a quantidade dos resíduos atualmente disponíveis
-        select
-            coalesce(sum(tbl_residuo.quantidade), 0)
-
-        from tbl_residuo
-
+	(
+		## Soma a quantidade dos resíduos atualmente disponíveis
+		select
+			coalesce(sum(tbl_residuo.quantidade), 0)
+		from tbl_residuo
         inner join (
-            -- Pega o último status de cada resíduo
+            ## Pega o último status de cada resíduo
             select
                 tbl_status_residuo_historico.id_residuo,
                 tbl_status_residuo_historico.id_status_residuo
@@ -161,20 +120,17 @@ select
         where tbl_status_residuo.status = 'Disponível'
             and tbl_residuo.id_estabelecimento = tbl_estabelecimento.id
 
-    ) as soma_total_quantidade,
+	) as soma_total_quantidade,
 
     (
-    -- Conta somente as ofertas que estão atualmente Pendentes
-    select
-        count(*)
-
-    from tbl_oferta_inicial
-
-    inner join tbl_residuo
-        on tbl_residuo.id = tbl_oferta_inicial.id_residuo
-
-    inner join (
-        -- Pega o último status de cada oferta
+		## Conta somente as ofertas que estão atualmente Pendentes
+		select
+			count(*)
+		from tbl_oferta_inicial
+		inner join tbl_residuo
+			on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+		inner join (
+        ## Pega o último status de cada oferta
         select
             tbl_status_oferta_historico.id_oferta_inicial,
             tbl_status_oferta_historico.id_status_oferta
@@ -190,25 +146,22 @@ select
             group by tbl_status_oferta_historico.id_oferta_inicial
         )
     ) as ultimo_status
-        on ultimo_status.id_oferta_inicial = tbl_oferta_inicial.id
+		on ultimo_status.id_oferta_inicial = tbl_oferta_inicial.id
 
-    inner join tbl_status_oferta
-        on tbl_status_oferta.id = ultimo_status.id_status_oferta
+	inner join tbl_status_oferta
+		on tbl_status_oferta.id = ultimo_status.id_status_oferta
 
-    where tbl_residuo.id_estabelecimento = tbl_estabelecimento.id
-        and tbl_status_oferta.status = 'Pendente'
-
+	where tbl_residuo.id_estabelecimento = tbl_estabelecimento.id
+		and tbl_status_oferta.status = 'Pendente'
 ) as ofertas_recebidas,
 
     (
-        -- Conta as coletas agendadas do estabelecimento
+        ## Conta as coletas agendadas do estabelecimento
         select
-            count(*)
-
+			count(*)
         from tbl_coleta
-
         inner join (
-            -- Pega o último status de cada coleta
+            ## Pega o último status de cada coleta
             select
                 tbl_status_coleta_historico.id_coleta,
                 tbl_status_coleta_historico.id_status_coleta
@@ -240,12 +193,50 @@ select
 
         where tbl_status_coleta.status = 'Agendada'
             and tbl_residuo.id_estabelecimento = tbl_estabelecimento.id
-
     ) as coletas_agendadas
+    
+from tbl_estabelecimento;
 
-from tbl_estabelecimento
-where tbl_estabelecimento.id = 4;
+-- ====== nome da view ======
+select * from vw_home_estabelecimento where id_estabelecimento = 1;
 
+-- Complemento da View de cima ---
+create view vw_home_ofertas_estabelecimento as
+select 
+	tbl_residuo.id_estabelecimento as id_estabelecimento,
+	tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa_coletora,
+    tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
+    tbl_residuo.id as id_residuo, tbl_residuo.quantidade, tbl_residuo.data_disponivel,
+	tbl_oferta_inicial.id as id_oferta_inicial, tbl_oferta_inicial.valor_ofertado,
+    tbl_status_oferta.status as status_oferta
+    
+from tbl_oferta_inicial
+	inner join tbl_empresa_coletora
+		on tbl_empresa_coletora.id = tbl_oferta_inicial.id_empresa_coletora
+	inner join tbl_residuo
+		on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+	inner join tbl_tipo_material
+		on tbl_tipo_material.id = tbl_residuo.id_tipo_material
+	inner join tbl_status_oferta_historico
+		on tbl_oferta_inicial.id = tbl_status_oferta_historico.id_oferta_inicial
+	inner join tbl_status_oferta
+		on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+        
+where tbl_status_oferta_historico.id in (
+    select
+        max(tbl_status_oferta_historico.id)
+    from tbl_status_oferta_historico
+    group by tbl_status_oferta_historico.id_oferta_inicial
+)
+
+and tbl_status_oferta.status = 'Pendente';
+
+-- ====== nome da view ======
+select * from vw_home_ofertas_estabelecimento where id_estabelecimento = 1;
+
+-- ====== para o resumo da tela home, utilizar as 2 views ======
+select * from vw_home_estabelecimento where id_estabelecimento = 1;
+select * from vw_home_ofertas_estabelecimento where id_estabelecimento = 1;
 
 
 
@@ -261,3 +252,35 @@ from tbl_residuo
 		on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
 
 where tbl_status_residuo.status = "Disponível";
+##################################
+select 
+	(
+		select
+			count(distinct tbl_status_residuo_historico.id_residuo)
+		from tbl_status_residuo_historico
+			inner join tbl_status_residuo
+				on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+		where tbl_status_residuo.status = "Disponível"
+    ) as residuos_disponiveis,
+    (
+		select
+			coalesce(sum(tbl_residuo.quantidade), 0) -- Se não tiver dados na tabela, o resultado fica 0
+		from tbl_residuo
+			inner join tbl_status_residuo_historico
+				on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
+			inner join tbl_status_residuo
+				on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+	) as soma_total_quantidade,
+    (
+		select count(*) from tbl_oferta_inicial
+    ) as ofertas_recebidas,
+    (
+		select
+			count(distinct tbl_coleta.id)
+		from tbl_coleta
+			inner join tbl_status_coleta_historico
+				on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
+			inner join tbl_status_coleta
+				on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+		where tbl_status_coleta.status = "Agendada"
+    ) as coletas_agendadas;
