@@ -11,7 +11,7 @@ use db_tcc_ecoleta;
 -- VIEW PARA O PERFIL ---
 create view vw_perfil_estabelecimento as
 select
-	tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_empresa, tbl_estabelecimento.cnpj, tbl_estabelecimento.senha_hash,
+	tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_empresa, tbl_estabelecimento.cnpj,
     tbl_email.id as id_email, tbl_email.email,
     tbl_telefone.id as id_telefone, tbl_telefone.numero as telefone,
     tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro, tbl_endereco.numero, tbl_endereco.bairro,
@@ -311,7 +311,7 @@ select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and
 -- VIEW PARA O PERFIL ---
 create view vw_perfil_empresa_coletora as
 select
-	tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa, tbl_empresa_coletora.cnpj, tbl_empresa_coletora.senha_hash,
+	tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa, tbl_empresa_coletora.cnpj,
     tbl_email.id as id_email, tbl_email.email,
     tbl_telefone.id as id_telefone, tbl_telefone.numero as telefone,
     tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro, tbl_endereco.numero, tbl_endereco.bairro,

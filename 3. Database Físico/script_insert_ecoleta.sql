@@ -67,7 +67,8 @@ insert into tbl_tipo_material (material) values
 ('Plástico'),
 ('Papelão'),
 ('Metal'),
-('Vidro');
+('Vidro'),
+('Isopor');
 
 -- ====== tabela do Estabelecimento - PRINCIPAL ======
 insert into tbl_estabelecimento (nome, cnpj, senha_hash, id_email, id_telefone, id_endereco) values
@@ -109,6 +110,12 @@ insert into tbl_residuo (horario_inicial, horario_final, quantidade, data_dispon
 ('14:00:00', '18:00:00', 22, '2026-06-21', 'Vidros diversos', 5, 2),
 ('08:00:00', '12:00:00', 16, '2026-06-22', 'Materiais de papelão', 3, 3),
 ('09:00:00', '15:00:00', 10, '2026-06-23', 'Plástico reciclável', 2, 4);
+
+insert into tbl_residuo (horario_inicial, horario_final, quantidade, data_disponivel, id_tipo_material, id_estabelecimento) values
+('10:00:00', '13:00:00', 8, '2026-06-12', 6, 1),
+('12:00:00', '16:00:00', 2, '2026-06-13', 6, 2),
+('06:00:00', '18:00:00', 17, '2026-06-14', 6, 3),
+('09:00:00', '15:00:00', 13, '2026-06-15', 6, 4);
 
 -- ====== tabela intermediaria Histórico do Status do Resíduo ======
 insert into tbl_status_residuo_historico (id_residuo, id_status_residuo) values
