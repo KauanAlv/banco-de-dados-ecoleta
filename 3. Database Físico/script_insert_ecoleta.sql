@@ -52,7 +52,8 @@ insert into tbl_status_oferta (status) values
 -- ====== tabela de Status da Coleta ======
 insert into tbl_status_coleta (status) values 
 ('Agendada'),
-('Concluída');
+('Concluída'),
+('Aguardando Finalização');
 
 -- ====== tabela de Status do Resíduo ======
 insert into tbl_status_residuo (status) values 
@@ -99,6 +100,16 @@ insert into tbl_residuo (horario_inicial, horario_final, quantidade, data_dispon
 ('06:00:00', '18:00:00', 25, '2026-06-14', 3, 4),
 ('09:00:00', '15:00:00', 11, '2026-06-15', 3, 4);
 
+insert into tbl_residuo (horario_inicial, horario_final, quantidade, data_disponivel, observacao, id_tipo_material, id_estabelecimento) values
+('08:00:00', '11:00:00', 15, '2026-06-16', 'Papelão de caixas de produtos', 3, 1),
+('09:00:00', '13:00:00', 8, '2026-06-17', 'Garrafas de vidro separadas', 5, 2),
+('13:00:00', '17:00:00', 30, '2026-06-18', 'Papelão de embalagens', 3, 3),
+('07:00:00', '12:00:00', 18, '2026-06-19', 'Plástico de embalagens', 2, 4),
+('10:00:00', '14:00:00', 12, '2026-06-20', 'Papel separado e organizado', 1, 1),
+('14:00:00', '18:00:00', 22, '2026-06-21', 'Vidros diversos', 5, 2),
+('08:00:00', '12:00:00', 16, '2026-06-22', 'Materiais de papelão', 3, 3),
+('09:00:00', '15:00:00', 10, '2026-06-23', 'Plástico reciclável', 2, 4);
+
 -- ====== tabela intermediaria Histórico do Status do Resíduo ======
 insert into tbl_status_residuo_historico (id_residuo, id_status_residuo) values
 (1, 1),
@@ -108,6 +119,16 @@ insert into tbl_status_residuo_historico (id_residuo, id_status_residuo) values
 (5, 3),
 (6, 1);
 
+insert into tbl_status_residuo_historico (id_residuo, id_status_residuo) values
+(7, 2),
+(8, 2),
+(9, 2),
+(10, 2),
+(11, 2),
+(12, 2),
+(13, 2),
+(14, 2);
+
 -- ====== tabela de Oferta Inicial - SEMIPRINCIPAL ======
 insert into tbl_oferta_inicial (valor_ofertado, nome_ofertante, id_empresa_coletora, id_residuo) values
 (12.00, 'Caio José', 1, 1),
@@ -115,6 +136,14 @@ insert into tbl_oferta_inicial (valor_ofertado, nome_ofertante, id_empresa_colet
 (20.00, 'Gustavo Miguel', 1, 3),
 (4.00, 'Breno Machado', 2, 4),
 (2.00, 'Fabio Mendes', 2, 6);
+
+insert into tbl_oferta_inicial (valor_ofertado, nome_ofertante, id_empresa_coletora, id_residuo) values
+(35.00, 'Marcos Vinícius', 1, 7),
+(28.00, 'Lucas Henrique', 2, 8),
+(45.00, 'Rafael Santos', 1, 9),
+(30.00, 'André Luiz', 2, 10),
+(22.00, 'Felipe Almeida', 1, 11),
+(40.00, 'Bruno Oliveira', 2, 12);
 
 -- ====== tabela intermediaria Histórico do Status da Oferta ======
 insert into tbl_status_oferta_historico (id_oferta_inicial, id_status_oferta) values
@@ -124,22 +153,62 @@ insert into tbl_status_oferta_historico (id_oferta_inicial, id_status_oferta) va
 (4, 2),
 (5, 3);
 
+insert into tbl_status_oferta_historico (id_oferta_inicial, id_status_oferta) values
+(6, 2),
+(7, 2),
+(8, 2),
+(9, 2),
+(10, 2),
+(11, 2);
+
 -- ====== tabela de Oferta Aceita - SEMIPRINCIPAL ======
 insert into tbl_oferta_aceita (nome_aceitante, id_estabelecimento) values
 ('José da Silva', 1),
 ('João Pereira', 2);
+
+insert into tbl_oferta_aceita (nome_aceitante, id_estabelecimento) values
+('Carlos Eduardo', 1),
+('Mariana Souza', 2),
+('Gabriel Costa', 3),
+('Thiago Martins', 4),
+('Daniel Ferreira', 1),
+('Eduardo Rodrigues', 2);
 
 -- ====== tabela de Oferta Final - PRINCIPAL que depende das 2 tabelas de oferta SEMIPRINCIPAL ======
 insert into tbl_oferta_final (id_oferta_inicial, id_oferta_aceita) values
 (2, 1),
 (4, 2);
 
+insert into tbl_oferta_final (id_oferta_inicial, id_oferta_aceita) values
+(6, 3),
+(7, 4),
+(8, 5),
+(9, 6),
+(10, 7),
+(11, 8);
+
 -- ====== tabela de Coleta - PRINCIPAL ======
 insert into tbl_coleta (id_oferta_final) values
 (1),
 (2);
 
+insert into tbl_coleta (id_oferta_final) values
+(3),
+(4),
+(5),
+(6),
+(7),
+(8);
+
 -- ====== tabela intermediaria Histórico do Status da Coleta ======
 insert into tbl_status_coleta_historico (id_coleta, id_status_coleta) values
 (1, 1),
 (2, 2);
+
+insert into tbl_status_coleta_historico (id_coleta, id_status_coleta) values
+(3, 2),
+(4, 2),
+(5, 2),
+(6, 1),
+(7, 3),
+(8, 3);

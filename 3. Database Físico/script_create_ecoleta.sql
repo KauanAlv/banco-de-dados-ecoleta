@@ -60,19 +60,19 @@ references	tbl_cidade(id)
 -- Tabela de Status da Oferta
 create table tbl_status_oferta (
 id 		int not null auto_increment primary key,
-status 	varchar(20) not null
+status 	varchar(30) not null
 );
 
 -- Tabela de Status da Coleta
 create table tbl_status_coleta (
 id 		int not null auto_increment primary key,
-status 	varchar(20) not null
+status 	varchar(30) not null
 );
 
 -- Tabela de Status do Resíduo
 create table tbl_status_residuo (
 id 		int not null auto_increment primary key,
-status 	varchar(20) not null
+status 	varchar(30) not null
 );
 
 -- Tabela do Tipo do Material
