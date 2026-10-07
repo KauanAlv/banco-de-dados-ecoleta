@@ -378,7 +378,7 @@ and (
 );
 
 -- ====== nome da view ======
--- VIEW GERAL (PARA EXIBIR EM TODA A TELA
+-- VIEW GERAL (PARA EXIBIR EM TODA A TELA)
 select * from vw_historico_estabelecimento where id_estabelecimento = 1;
 
 
@@ -864,7 +864,135 @@ where tbl_status_residuo_historico.id in (
 and tbl_status_residuo.status = 'Disponível';
 
 -- ====== nome da view ======
-select * from vw_estabelecimentos_empresa_coletora where id_empresa_coletora = 2; # No back colocar = ?; (significa que é igual ao id da empresa logada
+select * from vw_estabelecimentos_empresa_coletora where id_empresa_coletora = 2; # No back colocar = ?; (significa que é igual ao id da empresa logada)
+
+
+##################### Select para a tela de residuos disponiveis da empresa coletora #####################
+-- VIEW GERAL (PARA EXIBIR EM TODA A TELA)
+create view  vw_residuos_empresa_coletora as
+select
+    tbl_residuo.id as id_residuo,
+    tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
+    tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
+    tbl_distancia.id_empresa_coletora, tbl_distancia.distancia,
+    tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final, tbl_residuo.observacao,
+    tbl_status_residuo.status as status_residuo, tbl_status_residuo.id as id_status_residuo
+
+from tbl_residuo
+
+inner join tbl_tipo_material
+	on tbl_tipo_material.id = tbl_residuo.id_tipo_material
+inner join tbl_estabelecimento
+    on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
+inner join tbl_distancia
+     on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
+inner join tbl_status_residuo_historico
+    on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
+inner join tbl_status_residuo
+    on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+
+where tbl_status_residuo_historico.id in (
+    select max(tbl_status_residuo_historico.id)
+    from tbl_status_residuo_historico
+    group by tbl_status_residuo_historico.id_residuo
+)
+
+and tbl_status_residuo.status in ('Disponível', 'Agendado');
+
+-- ====== nome da view ======
+select * from vw_residuos_empresa_coletora where id_empresa_coletora = 1;  # No back colocar = ?; (significa que é igual ao id da empresa logada)
+
+
+### Complemento da View de cima ### (VIEW PARA OS RESIDUOS COM O STATUS DE DISPONIVEL)
+create view vw_residuos_disponiveis_empresa_coletora as
+select
+	tbl_residuo.id as id_residuo,
+	tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
+    tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
+    tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final,
+    tbl_distancia.distancia, tbl_distancia.id_empresa_coletora
+
+from tbl_residuo
+
+inner join tbl_tipo_material
+    on tbl_tipo_material.id = tbl_residuo.id_tipo_material
+inner join tbl_estabelecimento
+    on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
+inner join tbl_distancia
+	on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
+inner join tbl_status_residuo_historico
+    on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
+inner join tbl_status_residuo
+    on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+
+where tbl_status_residuo_historico.id in (
+    select max(tbl_status_residuo_historico.id)
+    from tbl_status_residuo_historico
+    group by tbl_status_residuo_historico.id_residuo
+)
+
+and tbl_status_residuo.status = 'Disponível';
+
+-- ====== nome da view ======
+select * from vw_residuos_disponiveis_empresa_coletora where id_residuo = 1 and id_empresa_coletora = 1;
+
+
+### Complemento da View de cima ### (VIEW PARA AS COLETAS COM O STATUS DE AGENDADO)
+create view vw_coleta_residuo_empresa_coletora as
+select
+	tbl_coleta.id as id_coleta,
+    tbl_empresa_coletora.id as id_empresa_coletora,
+    tbl_estabelecimento.id as id_estabelecimento,
+    tbl_tipo_material.id as id_tipo_material,
+    tbl_residuo.id as id_residuo,
+    tbl_tipo_material.material,
+    tbl_status_coleta.status as status_coleta,
+    tbl_estabelecimento.nome as nome_estabelecimento,
+	tbl_endereco.logradouro, tbl_endereco.numero, tbl_endereco.bairro, tbl_cidade.nome_cidade,
+    tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final, tbl_residuo.observacao,
+    tbl_oferta_inicial.valor_ofertado as valor_acordado    
+
+from tbl_coleta
+
+inner join tbl_oferta_final
+    on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+inner join tbl_oferta_inicial
+    on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+inner join tbl_empresa_coletora
+    on tbl_empresa_coletora.id = tbl_oferta_inicial.id_empresa_coletora
+inner join tbl_residuo
+    on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+inner join tbl_tipo_material
+    on tbl_tipo_material.id = tbl_residuo.id_tipo_material
+inner join tbl_estabelecimento
+    on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
+inner join tbl_endereco
+    on tbl_endereco.id = tbl_estabelecimento.id_endereco
+inner join tbl_cidade
+    on tbl_cidade.id = tbl_endereco.id_cidade
+inner join tbl_status_coleta_historico
+    on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
+inner join tbl_status_coleta
+    on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+
+where tbl_status_coleta_historico.id in (
+    select max(tbl_status_coleta_historico.id)
+    from tbl_status_coleta_historico
+    group by tbl_status_coleta_historico.id_coleta
+)
+
+and tbl_status_coleta.status in ('Agendada');
+
+-- ====== nome da view ======
+select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1;
+
+-- ====== para a tela de residuos disponíveis, utilizar as 3 views ======
+select * from vw_residuos_empresa_coletora where id_empresa_coletora = 1; # VIEW GERAL
+select * from vw_residuos_disponiveis_empresa_coletora where id_residuo = 1 and id_empresa_coletora = 1; # VIEW DE DISPONÍVEIS
+select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1; # VIEW DE AGENDADO
+
+
+##################### Select para a tela de residuos disponiveis da empresa coletora #####################
 
 
 -- -------------------------- TESTE -------------------------------------------------
