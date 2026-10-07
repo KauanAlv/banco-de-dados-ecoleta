@@ -47,8 +47,8 @@ cep 		varchar(12) not null,
 logradouro 	varchar(100) not null,
 numero 		int not null,
 bairro		varchar(80) not null,
-latitude	decimal(10,7) not null,
-longitude	decimal(10,7) not null,
+latitude	decimal(10,7),
+longitude	decimal(10,7),
 id_cidade	int not null,
 
 constraint	FK_CIDADE_ENDERECO

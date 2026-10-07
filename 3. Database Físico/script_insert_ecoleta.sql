@@ -136,6 +136,12 @@ insert into tbl_status_residuo_historico (id_residuo, id_status_residuo) values
 (13, 2),
 (14, 2);
 
+insert into tbl_status_residuo_historico (id_residuo, id_status_residuo) values
+(15, 1),
+(16, 1),
+(17, 1),
+(18, 1);
+
 -- ====== tabela de Oferta Inicial - SEMIPRINCIPAL ======
 insert into tbl_oferta_inicial (valor_ofertado, nome_ofertante, id_empresa_coletora, id_residuo) values
 (12.00, 'Caio José', 1, 1),
