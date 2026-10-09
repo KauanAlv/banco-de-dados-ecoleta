@@ -216,7 +216,27 @@ where tbl_status_residuo_historico.id in (
     from tbl_status_residuo_historico
     group by tbl_status_residuo_historico.id_residuo
 )
-and tbl_status_residuo.status in ('Disponível', 'Agendado');
+and tbl_status_residuo.status in ('Disponível', 'Agendado')
+
+and not exists (
+    select 1
+    from tbl_coleta
+    inner join tbl_status_coleta_historico
+        on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
+    inner join tbl_status_coleta
+        on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+    inner join tbl_oferta_final
+        on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+    inner join tbl_oferta_inicial
+        on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+    where tbl_oferta_inicial.id_residuo = tbl_residuo.id
+    and tbl_status_coleta_historico.id = (
+        select max(tbl_status_coleta_historico.id)
+        from tbl_status_coleta_historico
+        where tbl_status_coleta_historico.id_coleta = tbl_coleta.id
+    )
+    and tbl_status_coleta.status = 'Concluída'
+);
 
 -- ====== nome da view ======
 select * from vw_meus_residuos_estabelecimento where id_estabelecimento = 1;
@@ -282,6 +302,7 @@ select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and
 create view vw_coletas_estabelecimento as
 select 
 	tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa_coletora,
+    tbl_estabelecimento.id as id_estabelecimento,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
     tbl_residuo.id as id_residuo, tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final,
     tbl_distancia.id as id_distancia, tbl_distancia.distancia,
@@ -298,7 +319,7 @@ inner join tbl_tipo_material
 	on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_estabelecimento
     on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
-inner join tbl_distancia
+left join tbl_distancia
     on tbl_distancia.id_estabelecimento = tbl_estabelecimento.id
 		and tbl_distancia.id_empresa_coletora = tbl_empresa_coletora.id
 inner join tbl_status_oferta_historico
@@ -314,72 +335,84 @@ where tbl_status_oferta_historico.id in (
 and tbl_status_oferta.status in ('Pendente', 'Aceita');
 
 -- ====== nome da view ======
-select * from vw_coletas_estabelecimento; # where id_oferta_inicial = 1; #Isso é para filtrar pelo id da oferta
+select * from vw_coletas_estabelecimento where id_estabelecimento = 1; # and id_oferta_inicial = 1; #Isso é para filtrar pelo id da oferta
 
 
 ##################### Select para o Histórico do Estabelecimento #####################
 -- VIEW PARA O HISTÓRICO ---
 create view vw_historico_estabelecimento as
+-- Resíduos cancelados
 select
 	tbl_estabelecimento.id as id_estabelecimento,
     tbl_residuo.id as id_residuo, tbl_residuo.data_disponivel,
-    tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa_coletora,
+    null as id_empresa_coletora,
+    null as nome_empresa_coletora,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
     tbl_residuo.quantidade,
-    tbl_oferta_inicial.id as id_oferta_inicial, tbl_oferta_inicial.valor_ofertado as valor_acordado,
-
-    case
-        when tbl_status_residuo.status = 'Cancelado'
-            then 'Cancelado'
-        when tbl_status_coleta.status = 'Concluída'
-            then 'Concluída'
-    end as status
-
+    null as id_oferta_inicial,
+    null as valor_acordado,
+    'Cancelado' as status,
+    tbl_status_residuo_historico.data_hora_status as data_hora_evento
+    
 from tbl_residuo
 
 inner join tbl_estabelecimento
-	on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
+    on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
 inner join tbl_tipo_material
     on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_status_residuo_historico
-    on tbl_status_residuo_historico.id_residuo = tbl_residuo.id
+    on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
 inner join tbl_status_residuo
     on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
-left join tbl_oferta_inicial
-    on tbl_oferta_inicial.id_residuo = tbl_residuo.id
-left join tbl_empresa_coletora
-    on tbl_empresa_coletora.id = tbl_oferta_inicial.id_empresa_coletora
-left join tbl_oferta_final
-    on tbl_oferta_final.id_oferta_inicial = tbl_oferta_inicial.id
-left join tbl_coleta
-    on tbl_coleta.id_oferta_final = tbl_oferta_final.id
-left join tbl_status_coleta_historico
-    on tbl_status_coleta_historico.id_coleta = tbl_coleta.id
-left join tbl_status_coleta
-    on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
 
 where tbl_status_residuo_historico.id in (
     select max(tbl_status_residuo_historico.id)
     from tbl_status_residuo_historico
     group by tbl_status_residuo_historico.id_residuo
 )
+and tbl_status_residuo.status = 'Cancelado'
 
-and (
-    tbl_status_residuo.status = 'Cancelado'
+union all
+-- Coletas concluídas
+select
+    tbl_estabelecimento.id as id_estabelecimento,
+    tbl_residuo.id as id_residuo, tbl_residuo.data_disponivel,
+    tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa_coletora,
+    tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
+    tbl_residuo.quantidade,
+    tbl_oferta_inicial.id as id_oferta_inicial, tbl_oferta_inicial.valor_ofertado as valor_acordado,
+    'Concluída' as status,
+    tbl_status_coleta_historico.data_hora_status as data_hora_evento
 
-    or (
-        tbl_status_coleta_historico.id in (
-            select max(tbl_status_coleta_historico.id)
-            from tbl_status_coleta_historico
-            group by tbl_status_coleta_historico.id_coleta
-        )
-        and tbl_status_coleta.status = 'Concluída'
-    )
-);
+from tbl_coleta
+
+inner join tbl_oferta_final
+    on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+inner join tbl_oferta_inicial
+    on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+inner join tbl_residuo
+    on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+inner join tbl_estabelecimento
+    on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
+inner join tbl_tipo_material
+    on tbl_tipo_material.id = tbl_residuo.id_tipo_material
+inner join tbl_empresa_coletora
+    on tbl_empresa_coletora.id = tbl_oferta_inicial.id_empresa_coletora
+inner join tbl_status_coleta_historico
+    on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
+inner join tbl_status_coleta
+    on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+
+where tbl_status_coleta_historico.id in (
+    select max(tbl_status_coleta_historico.id)
+    from tbl_status_coleta_historico
+    group by tbl_status_coleta_historico.id_coleta
+)
+and tbl_status_coleta.status = 'Concluída';
 
 -- ====== nome da view ======
 -- VIEW GERAL (PARA EXIBIR EM TODA A TELA)
-select * from vw_historico_estabelecimento where id_estabelecimento = 1;
+select * from vw_historico_estabelecimento where id_estabelecimento = 1 order by data_hora_evento desc;
 
 
 ### Complemento da View de cima ### (VIEW PARA OS RESIDUOS COM O STATUS DE CANCELADO)
@@ -527,7 +560,7 @@ select * from vw_coletas_estabelecimento where id_oferta_inicial = 1; #Isso é p
 
 ## HISTÓRICO ## 
 -- ====== para a tela de histórico, utilizar as 3 views ======
-select * from vw_historico_estabelecimento where id_estabelecimento = 4; # VIEW GERAL
+select * from vw_historico_estabelecimento where id_estabelecimento = 4 order by data_hora_evento desc; # VIEW GERAL
 select * from vw_detalhe_residuo_cancelado_estabelecimento where id_residuo = 5 and id_estabelecimento = 4; # VIEW DE CANCELADO
 select * from vw_detalhe_coleta_concluida_estabelecimento where id_coleta = 3 and id_estabelecimento = 1; # VIEW DE CONCLUÍDA
 
@@ -821,7 +854,7 @@ inner join tbl_residuo
     on tbl_residuo.id_estabelecimento = tbl_estabelecimento.id
 inner join tbl_tipo_material
     on tbl_tipo_material.id = tbl_residuo.id_tipo_material
-inner join tbl_distancia
+left join tbl_distancia
     on tbl_distancia.id_estabelecimento = tbl_estabelecimento.id
 inner join tbl_status_residuo_historico
     on tbl_status_residuo_historico.id_residuo = tbl_residuo.id
@@ -857,7 +890,7 @@ inner join tbl_tipo_material
 	on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_estabelecimento
     on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
-inner join tbl_distancia
+left join tbl_distancia
      on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
 inner join tbl_status_residuo_historico
     on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
@@ -891,7 +924,7 @@ inner join tbl_tipo_material
     on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_estabelecimento
     on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
-inner join tbl_distancia
+left join tbl_distancia
 	on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
 inner join tbl_status_residuo_historico
     on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
@@ -994,7 +1027,7 @@ inner join tbl_tipo_material
     on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_empresa_coletora
     on tbl_empresa_coletora.id = tbl_oferta_inicial.id_empresa_coletora
-inner join tbl_distancia
+left join tbl_distancia
     on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
     and tbl_empresa_coletora.id = tbl_distancia.id_empresa_coletora
 inner join tbl_status_coleta_historico
@@ -1083,7 +1116,8 @@ select
     tbl_oferta_inicial.valor_ofertado as valor_historico,
     tbl_status_coleta.id as id_status_coleta,
     null as id_status_oferta,
-    tbl_status_coleta.status as status_historico
+    tbl_status_coleta.status as status_historico,
+    tbl_status_coleta_historico.data_hora_status as data_hora_evento
 
 from tbl_coleta
 
@@ -1126,7 +1160,8 @@ select
     tbl_oferta_inicial.valor_ofertado as valor_historico,
     null as id_status_coleta,
     tbl_status_oferta.id as id_status_oferta,
-    tbl_status_oferta.status as status_historico
+    tbl_status_oferta.status as status_historico,
+    tbl_status_oferta_historico.data_hora_status as data_hora_evento
 
 from tbl_oferta_inicial
 
@@ -1152,7 +1187,7 @@ where tbl_status_oferta_historico.id in (
 and tbl_status_oferta.status = 'Recusada';
 
 -- ====== nome da view ======
-select * from vw_historico_empresa_coletora where id_empresa_coletora = 2;
+select * from vw_historico_empresa_coletora where id_empresa_coletora = 2 order by data_hora_evento desc;
 
 ### Complemento da View de cima ### (VIEW PARA OS DETALHES DA COLETA COM O STATUS DE CONCLUÍDA)
 create view vw_detalhes_coleta_concluida_empresa_coletora as
@@ -1297,7 +1332,7 @@ select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_cole
 
 ## HISTÓRICO ## 
 -- ====== para a tela de histórico, utilizar as 3 views ======
-select * from vw_historico_empresa_coletora where id_empresa_coletora = 2; # VIEW GERAL
+select * from vw_historico_empresa_coletora where id_empresa_coletora = 2 order by data_hora_evento desc; # VIEW GERAL
 select * from vw_detalhes_coleta_concluida_empresa_coletora where id_empresa_coletora = 2 and id_coleta = 2; # VIEW DE COLETA CONCLUÍDA
 select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_coletora = 2 and id_oferta_inicial = 5; # VIEW DE OFERTA RECUSADA
 
