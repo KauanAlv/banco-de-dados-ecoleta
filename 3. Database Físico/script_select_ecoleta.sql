@@ -332,7 +332,26 @@ where tbl_status_oferta_historico.id in (
     from tbl_status_oferta_historico
     group by tbl_status_oferta_historico.id_oferta_inicial
 )
-and tbl_status_oferta.status in ('Pendente', 'Aceita');
+and tbl_status_oferta.status in ('Pendente', 'Aceita')
+
+and not exists (
+	select 1
+	from tbl_oferta_final
+		inner join tbl_coleta
+			on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+		inner join tbl_status_coleta_historico
+			on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
+		inner join tbl_status_coleta
+			on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+
+	where tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+	and tbl_status_coleta_historico.id = (
+		select max(tbl_status_coleta_historico.id)
+		from tbl_status_coleta_historico
+		where tbl_coleta.id = tbl_status_coleta_historico.id_coleta
+	)
+	and tbl_status_coleta.status = 'Concluída'
+);
 
 -- ====== nome da view ======
 select * from vw_coletas_estabelecimento where id_estabelecimento = 1; # and id_oferta_inicial = 1; #Isso é para filtrar pelo id da oferta
