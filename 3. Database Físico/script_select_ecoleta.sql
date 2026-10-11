@@ -842,7 +842,6 @@ select * from vw_home_ofertas_empresa_coletora where id_empresa_coletora = 1;
 create view vw_estabelecimentos_empresa_coletora as
 select
     tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
-    tbl_distancia.id_empresa_coletora, tbl_distancia.distancia,
     tbl_endereco.logradouro, tbl_endereco.numero,
     tbl_tipo_material.material, tbl_residuo.quantidade
 
@@ -854,8 +853,6 @@ inner join tbl_residuo
     on tbl_residuo.id_estabelecimento = tbl_estabelecimento.id
 inner join tbl_tipo_material
     on tbl_tipo_material.id = tbl_residuo.id_tipo_material
-left join tbl_distancia
-    on tbl_distancia.id_estabelecimento = tbl_estabelecimento.id
 inner join tbl_status_residuo_historico
     on tbl_status_residuo_historico.id_residuo = tbl_residuo.id
 inner join tbl_status_residuo
@@ -870,7 +867,15 @@ where tbl_status_residuo_historico.id in (
 and tbl_status_residuo.status = 'Disponível';
 
 -- ====== nome da view ======
-select * from vw_estabelecimentos_empresa_coletora where id_empresa_coletora = 2; # No back colocar = ?; (significa que é igual ao id da empresa logada)
+#select * from vw_estabelecimentos_empresa_coletora; where id_empresa_coletora = 2; No back colocar = ?; (significa que é igual ao id da empresa logada)
+
+#select
+#    vw_estabelecimentos_empresa_coletora.*,
+#    tbl_distancia.distancia
+#from vw_estabelecimentos_empresa_coletora
+#left join tbl_distancia
+#    on tbl_distancia.id_estabelecimento = vw_estabelecimentos_empresa_coletora.id_estabelecimento
+#    and tbl_distancia.id_empresa_coletora = ?; Para usar no back
 
 
 ##################### Select para a tela de residuos disponiveis da empresa coletora #####################
@@ -880,7 +885,6 @@ select
     tbl_residuo.id as id_residuo,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
     tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
-    tbl_distancia.id_empresa_coletora, tbl_distancia.distancia,
     tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final, tbl_residuo.observacao,
     tbl_status_residuo.status as status_residuo, tbl_status_residuo.id as id_status_residuo
 
@@ -890,8 +894,6 @@ inner join tbl_tipo_material
 	on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_estabelecimento
     on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
-left join tbl_distancia
-     on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
 inner join tbl_status_residuo_historico
     on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
 inner join tbl_status_residuo
@@ -906,7 +908,15 @@ where tbl_status_residuo_historico.id in (
 and tbl_status_residuo.status in ('Disponível', 'Agendado');
 
 -- ====== nome da view ======
-select * from vw_residuos_empresa_coletora where id_empresa_coletora = 1;  # No back colocar = ?; (significa que é igual ao id da empresa logada)
+#select * from vw_residuos_empresa_coletora where id_empresa_coletora = 1;  # No back colocar = ?; (significa que é igual ao id da empresa logada)
+
+#select
+#	vw_residuos_empresa_coletora.*,
+#    tbl_distancia.distancia
+#from vw_residuos_empresa_coletora
+#left join tbl_distancia
+#    on tbl_distancia.id_estabelecimento = vw_residuos_empresa_coletora.id_estabelecimento
+#    and tbl_distancia.id_empresa_coletora = ?; Para usar no backend
 
 
 ### Complemento da View de cima ### (VIEW PARA OS RESIDUOS COM O STATUS DE DISPONIVEL)
@@ -915,8 +925,7 @@ select
 	tbl_residuo.id as id_residuo,
 	tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
-    tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final,
-    tbl_distancia.distancia, tbl_distancia.id_empresa_coletora
+    tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final
 
 from tbl_residuo
 
@@ -924,8 +933,6 @@ inner join tbl_tipo_material
     on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_estabelecimento
     on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
-left join tbl_distancia
-	on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
 inner join tbl_status_residuo_historico
     on tbl_residuo.id = tbl_status_residuo_historico.id_residuo
 inner join tbl_status_residuo
@@ -940,7 +947,16 @@ where tbl_status_residuo_historico.id in (
 and tbl_status_residuo.status = 'Disponível';
 
 -- ====== nome da view ======
-select * from vw_residuos_disponiveis_empresa_coletora where id_residuo = 1 and id_empresa_coletora = 1;
+#select * from vw_residuos_disponiveis_empresa_coletora where id_residuo = 1 and id_empresa_coletora = 1;
+
+#select
+#    vw_residuos_disponiveis_empresa_coletora.*,
+#    tbl_distancia.distancia
+#from vw_residuos_disponiveis_empresa_coletora
+#left join tbl_distancia
+#    on tbl_distancia.id_estabelecimento = vw_residuos_disponiveis_empresa_coletora.id_estabelecimento
+#    and tbl_distancia.id_empresa_coletora = ?
+#where vw_residuos_disponiveis_empresa_coletora.id_residuo = ?; Para usar no backend
 
 
 ### Complemento da View de cima ### (VIEW PARA AS COLETAS COM O STATUS DE AGENDADO)
@@ -993,8 +1009,23 @@ and tbl_status_coleta.status in ('Agendada');
 select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1;
 
 -- ====== para a tela de residuos disponíveis, utilizar as 3 views ======
-select * from vw_residuos_empresa_coletora where id_empresa_coletora = 1; # VIEW GERAL
-select * from vw_residuos_disponiveis_empresa_coletora where id_residuo = 1 and id_empresa_coletora = 1; # VIEW DE DISPONÍVEIS
+select
+	vw_residuos_empresa_coletora.*,
+	tbl_distancia.distancia
+from vw_residuos_empresa_coletora
+	left join tbl_distancia
+		on tbl_distancia.id_estabelecimento = vw_residuos_empresa_coletora.id_estabelecimento
+		and tbl_distancia.id_empresa_coletora = 1; # VIEW GERAL, ? Para usar no backend
+        
+select
+    vw_residuos_disponiveis_empresa_coletora.*,
+    tbl_distancia.distancia
+from vw_residuos_disponiveis_empresa_coletora
+	left join tbl_distancia
+		on tbl_distancia.id_estabelecimento = vw_residuos_disponiveis_empresa_coletora.id_estabelecimento
+		and tbl_distancia.id_empresa_coletora = 1
+where vw_residuos_disponiveis_empresa_coletora.id_residuo = 1; # VIEW DE DISPONÍVEIS, ? Para usar no backend
+
 select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1; # VIEW DE AGENDADO
 
 
@@ -1317,12 +1348,33 @@ select * from vw_home_ofertas_empresa_coletora where id_empresa_coletora = 1;
 
 ## ESTABELECIMENTOS ##
 -- ====== para a tela de meus resíduos, utilizar as 2 views ======
-select * from vw_estabelecimentos_empresa_coletora where id_empresa_coletora = 2; # No back colocar = ?; (significa que é igual ao id da empresa logada)
+select 
+	vw_estabelecimentos_empresa_coletora.*,
+    tbl_distancia.distancia
+from vw_estabelecimentos_empresa_coletora
+	left join tbl_distancia
+		on tbl_distancia.id_estabelecimento = vw_estabelecimentos_empresa_coletora.id_estabelecimento
+		and tbl_distancia.id_empresa_coletora = 1; # No back colocar = ?; (significa que é igual ao id da empresa logada)
 
 ## RESÍDUOS DISPONÍVEIS ##
 -- ====== para a tela de meus resíduos, utilizar as 2 views ======
-select * from vw_residuos_empresa_coletora where id_empresa_coletora = 1; # VIEW GERAL
-select * from vw_residuos_disponiveis_empresa_coletora where id_residuo = 1 and id_empresa_coletora = 1; # VIEW DE DISPONÍVEIS
+select
+	vw_residuos_empresa_coletora.*,
+	tbl_distancia.distancia
+from vw_residuos_empresa_coletora
+	left join tbl_distancia
+		on tbl_distancia.id_estabelecimento = vw_residuos_empresa_coletora.id_estabelecimento
+		and tbl_distancia.id_empresa_coletora = 1; # VIEW GERAL, ? Para usar no backend
+        
+select
+    vw_residuos_disponiveis_empresa_coletora.*,
+    tbl_distancia.distancia
+from vw_residuos_disponiveis_empresa_coletora
+	left join tbl_distancia
+		on tbl_distancia.id_estabelecimento = vw_residuos_disponiveis_empresa_coletora.id_estabelecimento
+		and tbl_distancia.id_empresa_coletora = 1
+where vw_residuos_disponiveis_empresa_coletora.id_residuo = 1; # VIEW DE DISPONÍVEIS, ? Para usar no backend
+
 select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1; # VIEW DE AGENDADO
 
 ## COLETAS ##
