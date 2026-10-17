@@ -147,16 +147,28 @@ BEGIN
         select row_count() as affectedRows;
 
     elseif operacao = 'SELECT_ALL' then
-        select * from tbl_cidade order by id desc;
+        select
+			tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade,
+			tbl_estado.id as id_estado, tbl_estado.sigla, tbl_estado.nome_estado
+        from tbl_cidade
+        left join tbl_estado
+			on tbl_estado.id = tbl_cidade.id_estado
+        order by tbl_cidade.id desc;
 
     elseif operacao = 'SELECT_BY_ID' then
-        select * from tbl_cidade where id = id_param;
+        select
+			tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade,
+			tbl_estado.id as id_estado, tbl_estado.sigla, tbl_estado.nome_estado
+        from tbl_cidade
+        left join tbl_estado
+			on tbl_estado.id = tbl_cidade.id_estado
+		where tbl_cidade.id = id_param;
 
     elseif operacao = 'SELECT_BY_NOME_ESTADO' then
-        select id
+        select tbl_cidade.id
         from tbl_cidade
-        where nome_cidade = nome_cidade_param
-        and id_estado = id_estado_param;
+        where tbl_cidade.nome_cidade = nome_cidade_param
+        and tbl_cidade.id_estado = id_estado_param;
 
     else
         signal sqlstate '45000'
