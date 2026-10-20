@@ -176,3 +176,82 @@ BEGIN
     end if;
 END $$
 DELIMITER ;
+
+-- ====== TABELA DE ENDEREÇO ======
+DELIMITER $$
+create procedure procEndereco(
+	IN operacao varchar(30),
+    IN cep_param varchar(12),
+    IN logradouro_param varchar(100),
+    IN numero_param int,
+    IN bairro_param varchar(80),
+    IN latitude_param decimal(10,7),
+    IN longitude_param decimal(10,7),
+    IN id_cidade_param int,
+    IN id_param int
+)
+BEGIN
+	if operacao = 'INSERT' then
+        insert into tbl_endereco (
+            cep,
+            logradouro,
+            numero,
+            bairro,
+            latitude,
+            longitude,
+            id_cidade
+        ) values (
+            cep_param,
+            logradouro_param,
+            numero_param,
+            bairro_param,
+            latitude_param,
+            longitude_param,
+            id_cidade_param
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'UPDATE' then
+        update tbl_endereco
+        set
+            cep = cep_param,
+            logradouro = logradouro_param,
+            numero = numero_param,
+            bairro = bairro_param,
+            latitude = latitude_param,
+            longitude = longitude_param,
+            id_cidade = id_cidade_param
+        where id = id_param;
+        select row_count() as affectedRows;
+
+    elseif operacao = 'SELECT_ALL' then
+        select
+            tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro, tbl_endereco.numero, tbl_endereco.bairro, tbl_endereco.latitude,  tbl_endereco.longitude,
+            tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade,
+            tbl_estado.id as id_estado, tbl_estado.sigla, tbl_estado.nome_estado
+        from tbl_endereco
+        left join tbl_cidade
+            on tbl_cidade.id = tbl_endereco.id_cidade
+        left join tbl_estado
+            on tbl_estado.id = tbl_cidade.id_estado
+        order by tbl_endereco.id desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        select
+            tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro, tbl_endereco.numero, tbl_endereco.bairro, tbl_endereco.latitude,  tbl_endereco.longitude,
+            tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade,
+            tbl_estado.id as id_estado, tbl_estado.sigla, tbl_estado.nome_estado
+        from tbl_endereco
+        left join tbl_cidade
+            on tbl_cidade.id = tbl_endereco.id_cidade
+        left join tbl_estado
+            on tbl_estado.id = tbl_cidade.id_estado
+        where tbl_endereco.id = id_param;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procEndereco.';
+    end if;
+END $$
+
+DELIMITER ;
