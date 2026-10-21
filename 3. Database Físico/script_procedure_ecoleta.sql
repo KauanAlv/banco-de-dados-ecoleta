@@ -368,3 +368,43 @@ BEGIN
     end if;
 END $$
 DELIMITER ;
+
+-- ====== TABELA DO STATUS DA OFERTA ======
+DELIMITER $$
+create procedure procStatusOferta(
+    in operacao varchar(30),
+    in status_param varchar(30),
+    in id_param int
+)
+BEGIN
+	if operacao = 'INSERT' then
+        insert into tbl_status_oferta (
+            status
+        ) values (
+            status_param
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'UPDATE' then
+        update tbl_status_oferta
+        set
+            status = status_param
+        where id = id_param;
+        select row_count() as affectedRows;
+
+    elseif operacao = 'SELECT_ALL' then
+        select * from tbl_status_oferta order by id desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        select * from tbl_status_oferta where id = id_param;
+        
+	elseif operacao = 'DELETE' then
+		delete from tbl_status_oferta where id = id_param;
+		select row_count() as affectedRows;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procStatusOferta.';
+    end if;
+END $$
+DELIMITER ;
