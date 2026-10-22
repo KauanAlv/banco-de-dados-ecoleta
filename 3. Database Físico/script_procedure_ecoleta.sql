@@ -361,7 +361,12 @@ BEGIN
         left join tbl_estado
             on tbl_estado.id = tbl_cidade.id_estado
         where tbl_empresa_coletora.id = id_param;
-
+        
+	elseif operacao = 'SELECT_BY_CNPJ' then
+		select
+			tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome, tbl_empresa_coletora.cnpj, tbl_empresa_coletora.senha_hash
+		from tbl_empresa_coletora
+        where tbl_empresa_coletora.cnpj = cnpj_param;
     else
         signal sqlstate '45000'
         set message_text = 'Operação inválida na procEmpresaColetora.';
