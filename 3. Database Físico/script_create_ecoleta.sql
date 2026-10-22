@@ -82,51 +82,51 @@ material	varchar(50) not null
 );
 
 -- =============== CRIAÇÃO DAS TABELAS QUE RECEBEM CHAVE ESTRANGEIRA (FK) ===============
--- Tabela do Estabelecimento - PRINCIPAL
-create table tbl_estabelecimento (
-id 			int not null auto_increment primary key,
-nome 		varchar(100) not null,
-cnpj 		varchar(25) not null,
-senha_hash 	varchar(512) not null,
-id_email 	int not null,
-id_telefone	int not null,
-id_endereco	int not null,
+	-- Tabela do Estabelecimento - PRINCIPAL
+	create table tbl_estabelecimento (
+	id 			int not null auto_increment primary key,
+	nome 		varchar(100) not null,
+	cnpj 		varchar(25) not null unique,
+	senha_hash 	varchar(512) not null,
+	id_email 	int not null,
+	id_telefone	int not null,
+	id_endereco	int not null,
 
-constraint 	FK_EMAIL_ESTABELECIMENTO
-foreign key	(id_email)
-references	tbl_email(id),
+	constraint 	FK_EMAIL_ESTABELECIMENTO
+	foreign key	(id_email)
+	references	tbl_email(id),
 
-constraint 	FK_TELEFONE_ESTABELECIMENTO
-foreign key	(id_telefone)
-references	tbl_telefone(id),
+	constraint 	FK_TELEFONE_ESTABELECIMENTO
+	foreign key	(id_telefone)
+	references	tbl_telefone(id),
 
-constraint 	FK_ENDERECO_ESTABELECIMENTO
-foreign key	(id_endereco)
-references	tbl_endereco(id)
-);
+	constraint 	FK_ENDERECO_ESTABELECIMENTO
+	foreign key	(id_endereco)
+	references	tbl_endereco(id)
+	);
 
--- Tabela da Empresa Coletora - PRINCIPAL
-create table tbl_empresa_coletora (
-id 			int not null auto_increment primary key,
-nome 		varchar(100) not null,
-cnpj 		varchar(25) not null,
-senha_hash 	varchar(512) not null,
-id_email 	int not null,
-id_telefone	int not null,
-id_endereco	int not null,
+	-- Tabela da Empresa Coletora - PRINCIPAL
+	create table tbl_empresa_coletora (
+	id 			int not null auto_increment primary key,
+	nome 		varchar(100) not null,
+	cnpj 		varchar(25) not null unique,
+	senha_hash 	varchar(512) not null,
+	id_email 	int not null,
+	id_telefone	int not null,
+	id_endereco	int not null,
 
-constraint 	FK_EMAIL_EMPRESACOLETORA
-foreign key	(id_email)
-references	tbl_email(id),
+	constraint 	FK_EMAIL_EMPRESACOLETORA
+	foreign key	(id_email)
+	references	tbl_email(id),
 
-constraint 	FK_TELEFONE_EMPRESACOLETORA
-foreign key	(id_telefone)
-references	tbl_telefone(id),
+	constraint 	FK_TELEFONE_EMPRESACOLETORA
+	foreign key	(id_telefone)
+	references	tbl_telefone(id),
 
-constraint 	FK_ENDERECO_EMPRESACOLETORA
-foreign key	(id_endereco)
-references	tbl_endereco(id)
-);
+	constraint 	FK_ENDERECO_EMPRESACOLETORA
+	foreign key	(id_endereco)
+	references	tbl_endereco(id)
+	);
 
 -- Tabela de Distância - PRINCIPAL 
 -- (Dados serão adicionados automaticamente através do cálculo da distância
