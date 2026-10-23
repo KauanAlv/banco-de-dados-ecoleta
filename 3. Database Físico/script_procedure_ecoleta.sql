@@ -265,7 +265,109 @@ DELIMITER ;
 
 -- ====== TABELA DO ESTABELECIMENTO ======
 DELIMITER $$
+create procedure procEstabelecimento(
+    IN operacao varchar(30),
+    IN nome_param varchar(100),
+    IN cnpj_param varchar(25),
+    IN senha_hash_param varchar(512),
+    IN id_email_param int,
+    IN id_telefone_param int,
+    IN id_endereco_param int,
+    IN id_param int
+)
+BEGIN
+	if operacao = 'INSERT' then
+        insert into tbl_estabelecimento (
+            nome,
+            cnpj,
+            senha_hash,
+            id_email,
+            id_telefone,
+            id_endereco
+        ) values (
+            nome_param,
+            cnpj_param,
+            senha_hash_param,
+            id_email_param,
+            id_telefone_param,
+            id_endereco_param
+        );
+        select last_insert_id() as id;
 
+    elseif operacao = 'UPDATE' then
+        update tbl_estabelecimento
+        set
+            nome = nome_param,
+            cnpj = cnpj_param,
+            senha_hash = senha_hash_param,
+            id_email = id_email_param,
+            id_telefone = id_telefone_param,
+            id_endereco = id_endereco_param
+        where id = id_param;
+        select row_count() as affectedRows;
+
+    elseif operacao = 'SELECT_ALL' then
+        select
+            tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome, tbl_estabelecimento.cnpj,
+            tbl_email.id as id_email, tbl_email.email,
+            tbl_telefone.id as id_telefone, tbl_telefone.numero as numero_telefone,
+            tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro,
+            tbl_endereco.numero as numero_endereco, tbl_endereco.bairro,
+            tbl_endereco.latitude, tbl_endereco.longitude,
+            tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade,
+            tbl_estado.id as id_estado, tbl_estado.sigla, tbl_estado.nome_estado
+        from tbl_estabelecimento
+
+        left join tbl_email
+            on tbl_email.id = tbl_estabelecimento.id_email
+        left join tbl_telefone
+            on tbl_telefone.id = tbl_estabelecimento.id_telefone
+        left join tbl_endereco
+            on tbl_endereco.id = tbl_estabelecimento.id_endereco
+        left join tbl_cidade
+            on tbl_cidade.id = tbl_endereco.id_cidade
+        left join tbl_estado
+            on tbl_estado.id = tbl_cidade.id_estado
+        order by tbl_estabelecimento.id desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        select
+            tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome, tbl_estabelecimento.cnpj,
+            tbl_email.id as id_email, tbl_email.email,
+            tbl_telefone.id as id_telefone, tbl_telefone.numero as numero_telefone,
+            tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro,
+            tbl_endereco.numero as numero_endereco, tbl_endereco.bairro,
+            tbl_endereco.latitude, tbl_endereco.longitude,
+            tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade,
+            tbl_estado.id as id_estado, tbl_estado.sigla, tbl_estado.nome_estado
+        from tbl_estabelecimento
+
+        left join tbl_email
+            on tbl_email.id = tbl_estabelecimento.id_email
+        left join tbl_telefone
+            on tbl_telefone.id = tbl_estabelecimento.id_telefone
+        left join tbl_endereco
+            on tbl_endereco.id = tbl_estabelecimento.id_endereco
+        left join tbl_cidade
+            on tbl_cidade.id = tbl_endereco.id_cidade
+        left join tbl_estado
+            on tbl_estado.id = tbl_cidade.id_estado
+        where tbl_estabelecimento.id = id_param;
+
+    elseif operacao = 'SELECT_BY_CNPJ' then
+        select
+            tbl_estabelecimento.id as id_estabelecimento,
+            tbl_estabelecimento.nome,
+            tbl_estabelecimento.cnpj,
+            tbl_estabelecimento.senha_hash
+        from tbl_estabelecimento
+        where tbl_estabelecimento.cnpj = cnpj_param;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procEstabelecimento.';
+    end if;
+END $$
 DELIMITER ;
 
 
