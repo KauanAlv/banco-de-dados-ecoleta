@@ -80,7 +80,7 @@ insert into tbl_estabelecimento (nome, cnpj, senha_hash, id_email, id_telefone, 
 
 -- ====== tabela da Empresa Coletora - PRINCIPAL ======
 insert into tbl_empresa_coletora (nome, cnpj, senha_hash, id_email, id_telefone, id_endereco) values
-('Coletoria Teste Logística', '11.111.111/0001-11', '$2a$10$D4eR1q5t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q', 5, 5, 1),
+('Coletoria Teste Logística', '50.150.221/0001-14', '$2a$10$D4eR1q5t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q', 5, 5, 1),
 ('Coletora XYZ Transportes', '22.222.222/0001-22', '$2a$10$E5fS2r6u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q1r', 6, 6, 2);
 
 -- ====== tabela do Estabelecimento - PRINCIPAL ======
