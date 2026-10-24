@@ -11,7 +11,7 @@ use db_tcc_ecoleta;
 -- VIEW PARA O RESUMO DA HOME ---
 create view vw_home_estabelecimento as
 select
-    tbl_estabelecimento.id as id_estabelecimento,
+    tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_empresa,
     (
         ## Conta os resíduos que o último status é Disponível
         select 
@@ -596,7 +596,7 @@ select * from vw_perfil_estabelecimento where id_estabelecimento = 1;
 -- VIEW PARA O RESUMO DA HOME ---
 create view vw_home_empresa_coletora as
 select
-    tbl_empresa_coletora.id as id_empresa_coletora,
+    tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa,
     	(
 		## Soma a quantidade dos resíduos atualmente disponíveis
 		select
