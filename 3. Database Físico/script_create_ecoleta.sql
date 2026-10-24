@@ -133,7 +133,7 @@ material	varchar(50) not null
 --  entre o Estabelecimento e a Empresa Coletora)
 create table tbl_distancia (
 id 					int not null auto_increment primary key,
-distancia 			decimal(8,2) not null,
+distancia 			decimal(8,2) default null,
 data_calculo 		datetime not null default current_timestamp,
 id_estabelecimento 	int not null,
 id_empresa_coletora int not null,
