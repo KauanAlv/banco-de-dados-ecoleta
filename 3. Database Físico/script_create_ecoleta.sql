@@ -138,6 +138,10 @@ data_calculo 		datetime not null default current_timestamp,
 id_estabelecimento 	int not null,
 id_empresa_coletora int not null,
 
+# Unique Key (UK) - a combinação dos dois IDs não podem se repetir
+constraint UK_ESTABELECIMENTO_EMPRESA_COLETORA_DISTANCIA
+unique (id_estabelecimento, id_empresa_coletora),
+
 constraint	FK_ESTABELECIMENTO_DISTANCIA
 foreign key	(id_estabelecimento)
 references	tbl_estabelecimento(id),
