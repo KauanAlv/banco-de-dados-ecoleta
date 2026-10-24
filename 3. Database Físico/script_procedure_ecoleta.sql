@@ -259,6 +259,107 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- ====== TABELA DE DISTÂNCIA ======
+DELIMITER $$
+create procedure procDistancia(
+    IN operacao varchar(30),
+    IN distancia_param decimal(8,2),
+    IN id_estabelecimento_param int,
+    IN id_empresa_coletora_param int,
+    IN id_param int
+)
+BEGIN
+	if operacao = 'INSERT' then
+		insert into tbl_distancia (
+			distancia,
+			id_estabelecimento,
+			id_empresa_coletora
+		) values (
+			distancia_param,
+			id_estabelecimento_param,
+			id_empresa_coletora_param
+		)
+		on duplicate key update
+			distancia = distancia_param,
+			data_calculo = current_timestamp;
+
+		select id
+		from tbl_distancia
+		where id_estabelecimento = id_estabelecimento_param
+		  and id_empresa_coletora = id_empresa_coletora_param;
+
+    elseif operacao = 'UPDATE' then
+		update tbl_distancia
+		set
+			distancia = distancia_param,
+			data_calculo = current_timestamp,
+			id_estabelecimento = id_estabelecimento_param,
+			id_empresa_coletora = id_empresa_coletora_param
+		where id = id_param;
+		select row_count() as affectedRows;
+    
+    elseif operacao = 'SELECT_ALL' then
+        select
+            tbl_distancia.id as id_distancia, tbl_distancia.distancia, tbl_distancia.data_calculo,
+            tbl_distancia.id_estabelecimento,
+            tbl_estabelecimento.nome as nome_estabelecimento,
+            tbl_distancia.id_empresa_coletora,
+            tbl_empresa_coletora.nome as nome_empresa_coletora
+        from tbl_distancia
+
+        left join tbl_estabelecimento
+            on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
+        left join tbl_empresa_coletora
+            on tbl_empresa_coletora.id = tbl_distancia.id_empresa_coletora
+        order by tbl_distancia.id desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        select
+            tbl_distancia.id as id_distancia, tbl_distancia.distancia, tbl_distancia.data_calculo,
+            tbl_distancia.id_estabelecimento,
+            tbl_estabelecimento.nome as nome_estabelecimento,
+            tbl_distancia.id_empresa_coletora,
+            tbl_empresa_coletora.nome as nome_empresa_coletora
+        from tbl_distancia
+
+        left join tbl_estabelecimento
+            on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
+        left join tbl_empresa_coletora
+            on tbl_empresa_coletora.id = tbl_distancia.id_empresa_coletora
+        where tbl_distancia.id = id_param;
+
+    elseif operacao = 'SELECT_BY_ESTABELECIMENTO' then
+        select
+            tbl_distancia.id as id_distancia, tbl_distancia.distancia, tbl_distancia.data_calculo,
+            tbl_distancia.id_empresa_coletora,
+            tbl_empresa_coletora.nome as nome_empresa_coletora
+        from tbl_distancia
+
+        left join tbl_empresa_coletora
+            on tbl_empresa_coletora.id = tbl_distancia.id_empresa_coletora
+        where tbl_distancia.id_estabelecimento = id_estabelecimento_param
+        order by tbl_distancia.distancia asc;
+
+    elseif operacao = 'SELECT_BY_EMPRESA_COLETORA' then
+        select
+            tbl_distancia.id as id_distancia, tbl_distancia.distancia, tbl_distancia.data_calculo,
+            tbl_distancia.id_estabelecimento,
+            tbl_estabelecimento.nome as nome_estabelecimento
+        from tbl_distancia
+
+        left join tbl_estabelecimento
+            on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
+        where tbl_distancia.id_empresa_coletora = id_empresa_coletora_param
+        order by tbl_distancia.distancia asc;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procDistancia.';
+    end if;      
+END $$
+DELIMITER ;
+
+
 -- -----------------------------------------------------
 -- ---              ESTABELECIMENTO               ------
 -- -----------------------------------------------------
