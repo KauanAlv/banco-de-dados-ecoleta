@@ -862,7 +862,8 @@ create view vw_estabelecimentos_empresa_coletora as
 select
     tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
     tbl_endereco.logradouro, tbl_endereco.numero,
-    tbl_tipo_material.material, tbl_residuo.quantidade
+    tbl_residuo.id as id_residuo, tbl_residuo.quantidade,
+    tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material
 
 from tbl_estabelecimento
 
