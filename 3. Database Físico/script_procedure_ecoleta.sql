@@ -666,3 +666,199 @@ BEGIN
     end if;
 END $$
 DELIMITER ;
+
+-- ====== TABELA DA OFERTA INICIAL ======
+DELIMITER $$
+create procedure procOfertaInicial(
+    IN operacao varchar(30),
+    IN valor_ofertado_param decimal(8,2),
+    IN nome_ofertante_param varchar(100),
+    IN id_empresa_coletora_param int,
+    IN id_residuo_param int,
+    IN id_param int
+)
+BEGIN
+    if operacao = 'INSERT' then
+        insert into tbl_oferta_inicial (
+            valor_ofertado,
+            nome_ofertante,
+            id_empresa_coletora,
+            id_residuo
+        ) values (
+            valor_ofertado_param,
+            nome_ofertante_param,
+            id_empresa_coletora_param,
+            id_residuo_param
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'SELECT_ALL' then
+        select
+            tbl_oferta_inicial.id as id_oferta_inicial, tbl_oferta_inicial.valor_ofertado, tbl_oferta_inicial.nome_ofertante, tbl_oferta_inicial.data_hora_oferta,
+            tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa_coletora,
+            tbl_residuo.id as id_residuo,
+            tbl_status_oferta.id as id_status_oferta, tbl_status_oferta.status as status_oferta,
+            tbl_status_oferta_historico.data_hora_status
+        from tbl_oferta_inicial
+        left join tbl_empresa_coletora
+            on tbl_empresa_coletora.id = tbl_oferta_inicial.id_empresa_coletora
+        left join tbl_residuo
+            on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+        left join tbl_status_oferta_historico
+            on tbl_status_oferta_historico.id = (
+                select max(historico.id)
+                from tbl_status_oferta_historico as historico
+                where historico.id_oferta_inicial = tbl_oferta_inicial.id
+            )
+        left join tbl_status_oferta
+            on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+        order by tbl_oferta_inicial.id desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        select
+            tbl_oferta_inicial.id as id_oferta_inicial, tbl_oferta_inicial.valor_ofertado, tbl_oferta_inicial.nome_ofertante, tbl_oferta_inicial.data_hora_oferta,
+            tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa_coletora,
+            tbl_residuo.id as id_residuo,
+            tbl_status_oferta.id as id_status_oferta, tbl_status_oferta.status as status_oferta,
+            tbl_status_oferta_historico.data_hora_status
+        from tbl_oferta_inicial
+        left join tbl_empresa_coletora
+            on tbl_empresa_coletora.id = tbl_oferta_inicial.id_empresa_coletora
+        left join tbl_residuo
+            on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+        left join tbl_status_oferta_historico
+            on tbl_status_oferta_historico.id = (
+                select max(historico.id)
+                from tbl_status_oferta_historico as historico
+                where historico.id_oferta_inicial = tbl_oferta_inicial.id
+            )
+        left join tbl_status_oferta
+            on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+        where tbl_oferta_inicial.id = id_param;
+
+    elseif operacao = 'SELECT_PENDING' then
+        -- Verifica se a empresa coletora já possui uma oferta pendente para o mesmo resíduo
+        select
+            tbl_oferta_inicial.id as id_oferta_inicial
+        from tbl_oferta_inicial
+        inner join tbl_status_oferta_historico
+            on tbl_status_oferta_historico.id = (
+                select max(historico.id)
+                from tbl_status_oferta_historico as historico
+                where historico.id_oferta_inicial = tbl_oferta_inicial.id
+            )
+        inner join tbl_status_oferta
+            on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+        where tbl_oferta_inicial.id_empresa_coletora = id_empresa_coletora_param
+          and tbl_oferta_inicial.id_residuo = id_residuo_param
+          and tbl_status_oferta.status = 'Pendente'
+        limit 1;
+
+    elseif operacao = 'SELECT_RESIDUO_FOR_UPDATE' then
+        -- Consulta o resíduo e bloqueia sua linha durante a transação para evitar ofertas simultâneas da mesma coletora
+        select
+            tbl_residuo.id as id_residuo,
+            (
+                select tbl_status_residuo.status
+                from tbl_status_residuo_historico
+                inner join tbl_status_residuo
+                    on tbl_status_residuo.id =
+                       tbl_status_residuo_historico.id_status_residuo
+                where tbl_status_residuo_historico.id_residuo =
+                      tbl_residuo.id
+                order by tbl_status_residuo_historico.id desc
+                limit 1
+            ) as status_residuo
+        from tbl_residuo
+        where tbl_residuo.id = id_residuo_param
+        for update;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procOfertaInicial.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== TABELA DO HISTÓRICO DO STATUS DA OFERTA ======
+DELIMITER $$
+create procedure procStatusOfertaHistorico(
+    IN operacao varchar(30),
+    IN id_oferta_inicial_param int,
+    IN id_status_oferta_param int,
+    IN id_param int
+)
+BEGIN
+    declare id_status_pendente int default null;
+
+    if operacao = 'INSERT_PENDENTE' then
+        -- Passa o id que tem o status pendente para ser o id_status_pendente
+        select id into id_status_pendente 
+        from tbl_status_oferta
+        where status = 'Pendente'
+        limit 1;
+
+        -- Verifica se o status Pendente existe
+        if id_status_pendente is null then
+            signal sqlstate '45000'
+            set message_text = 'Status Pendente não encontrado.';
+        end if;
+
+        -- Insere o primeiro status da oferta
+        insert into tbl_status_oferta_historico (
+            id_oferta_inicial,
+            id_status_oferta
+        ) values (
+            id_oferta_inicial_param,
+            id_status_pendente
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'INSERT' then
+        -- Insere uma nova alteração no histórico da oferta
+        insert into tbl_status_oferta_historico (
+            id_oferta_inicial,
+            id_status_oferta
+        ) values (
+            id_oferta_inicial_param,
+            id_status_oferta_param
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'SELECT_ALL' then
+        select
+            tbl_status_oferta_historico.id as id_historico, tbl_status_oferta_historico.id_oferta_inicial,
+            tbl_status_oferta.id as id_status_oferta, tbl_status_oferta.status as status_oferta,
+            tbl_status_oferta_historico.data_hora_status
+        from tbl_status_oferta_historico
+        inner join tbl_status_oferta
+            on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+        order by tbl_status_oferta_historico.id desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        select
+            tbl_status_oferta_historico.id as id_historico, tbl_status_oferta_historico.id_oferta_inicial,
+            tbl_status_oferta.id as id_status_oferta, tbl_status_oferta.status as status_oferta,
+            tbl_status_oferta_historico.data_hora_status
+        from tbl_status_oferta_historico
+        inner join tbl_status_oferta
+            on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+        where tbl_status_oferta_historico.id = id_param;
+
+    elseif operacao = 'SELECT_BY_OFERTA' then
+        select
+            tbl_status_oferta_historico.id as id_historico, tbl_status_oferta_historico.id_oferta_inicial,
+            tbl_status_oferta.id as id_status_oferta, tbl_status_oferta.status as status_oferta,
+            tbl_status_oferta_historico.data_hora_status
+        from tbl_status_oferta_historico
+        inner join tbl_status_oferta
+            on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+        where tbl_status_oferta_historico.id_oferta_inicial = id_oferta_inicial_param
+        order by tbl_status_oferta_historico.id desc;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procStatusOfertaHistorico.';
+    end if;
+END $$
+DELIMITER ;
