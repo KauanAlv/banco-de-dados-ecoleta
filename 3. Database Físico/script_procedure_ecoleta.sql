@@ -577,6 +577,56 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- ====== PROCEDURE PARA A TELA DE ESTABELECIMENTOS ======
+DELIMITER $$
+create procedure procTelaEstabelecimentosEmpresaColetora(
+    IN operacao varchar(30),
+    IN id_empresa_coletora_param int,
+    IN id_tipo_material_param int
+)
+BEGIN
+	if operacao = 'SELECT_ALL' then
+        select
+            vw_estabelecimentos_empresa_coletora.*,
+            tbl_distancia.distancia
+        from vw_estabelecimentos_empresa_coletora
+        left join tbl_distancia
+            on tbl_distancia.id_estabelecimento = vw_estabelecimentos_empresa_coletora.id_estabelecimento
+            and tbl_distancia.id_empresa_coletora = id_empresa_coletora_param
+        order by
+            tbl_distancia.distancia is null asc,
+            tbl_distancia.distancia asc,
+            vw_estabelecimentos_empresa_coletora.id_estabelecimento,
+            vw_estabelecimentos_empresa_coletora.id_residuo;
+
+    elseif operacao = 'SELECT_BY_MATERIAL' then
+        select
+            vw_estabelecimentos_empresa_coletora.*,
+            tbl_distancia.distancia
+        from vw_estabelecimentos_empresa_coletora
+        left join tbl_distancia
+            on tbl_distancia.id_estabelecimento = vw_estabelecimentos_empresa_coletora.id_estabelecimento
+            and tbl_distancia.id_empresa_coletora = id_empresa_coletora_param
+        where exists (
+        select 1
+        from vw_estabelecimentos_empresa_coletora as filtro
+        where filtro.id_estabelecimento = vw_estabelecimentos_empresa_coletora.id_estabelecimento
+        and filtro.id_tipo_material = id_tipo_material_param
+        )
+        order by
+            tbl_distancia.distancia is null asc,
+			tbl_distancia.distancia asc,
+            vw_estabelecimentos_empresa_coletora.id_estabelecimento,
+            vw_estabelecimentos_empresa_coletora.id_residuo;
+
+    else
+        signal sqlstate '45000'
+        set message_text =
+            'Operação inválida na procTelaEstabelecimentosEmpresaColetora.';
+    end if;
+END $$
+DELIMITER ;
+
 -- ====== TABELA DO STATUS DA OFERTA ======
 DELIMITER $$
 create procedure procStatusOferta(
