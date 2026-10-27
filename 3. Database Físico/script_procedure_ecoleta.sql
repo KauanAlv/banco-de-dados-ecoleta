@@ -862,3 +862,68 @@ BEGIN
     end if;
 END $$
 DELIMITER ;
+
+-- ====== PROCEDURE PARA A TELA DE RESÍDUOS DISPONÍVEIS ======
+DELIMITER $$
+create procedure procTelaResiduosEmpresaColetora(
+    IN operacao varchar(30),
+    IN id_empresa_coletora_param int,
+    IN id_residuo_param int
+)
+BEGIN
+    -- Busca todos os resíduos para os cards da tela
+    if operacao = 'SELECT_ALL' then
+        select
+            vw_residuos_empresa_coletora.*,
+            tbl_distancia.distancia
+        from vw_residuos_empresa_coletora
+        left join tbl_distancia
+            on tbl_distancia.id_estabelecimento = vw_residuos_empresa_coletora.id_estabelecimento
+            and tbl_distancia.id_empresa_coletora = id_empresa_coletora_param
+        where
+            -- Resíduos disponíveis aparecem para todas as coletoras
+            vw_residuos_empresa_coletora.status_residuo = 'Disponível'
+            or
+            -- Resíduos agendados aparecem somente para a coletora responsável
+            (
+                vw_residuos_empresa_coletora.status_residuo = 'Agendado'
+                and exists (
+                    select 1
+                    from vw_coleta_residuo_empresa_coletora
+                    where vw_coleta_residuo_empresa_coletora.id_residuo = vw_residuos_empresa_coletora.id_residuo
+                    and vw_coleta_residuo_empresa_coletora.id_empresa_coletora = id_empresa_coletora_param
+                )
+            )
+        order by vw_residuos_empresa_coletora.id_residuo desc;
+
+    -- Busca os detalhes de um resíduo disponível para fazer oferta
+    elseif operacao = 'SELECT_BY_ID_DISPONIVEL' then
+        select
+            vw_residuos_disponiveis_empresa_coletora.*,
+            tbl_distancia.distancia
+        from vw_residuos_disponiveis_empresa_coletora
+        left join tbl_distancia
+            on tbl_distancia.id_estabelecimento = vw_residuos_disponiveis_empresa_coletora.id_estabelecimento
+            and tbl_distancia.id_empresa_coletora = id_empresa_coletora_param
+        where vw_residuos_disponiveis_empresa_coletora.id_residuo = id_residuo_param;
+
+    -- Busca os detalhes da coleta agendada de um resíduo
+    elseif operacao = 'SELECT_BY_ID_COLETA' then
+	-- (caso não precise retornar a distância)
+    -- - select * from vw_coleta_residuo_empresa_coletora where id_residuo = id_residuo_param and id_empresa_coletora = id_empresa_coletora_param;
+        select
+            vw_coleta_residuo_empresa_coletora.*,
+            tbl_distancia.distancia
+        from vw_coleta_residuo_empresa_coletora
+        left join tbl_distancia
+            on tbl_distancia.id_estabelecimento = vw_coleta_residuo_empresa_coletora.id_estabelecimento
+            and tbl_distancia.id_empresa_coletora = id_empresa_coletora_param
+        where vw_coleta_residuo_empresa_coletora.id_residuo = id_residuo_param
+        and vw_coleta_residuo_empresa_coletora.id_empresa_coletora = id_empresa_coletora_param;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida.';
+    end if;
+END $$
+DELIMITER ;
