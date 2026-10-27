@@ -262,7 +262,7 @@ nome_coletor 	varchar(100),
 placa_veiculo 	varchar(12),
 data_coleta 	date,
 hora_coleta 	time,
-id_oferta_final int not null,
+id_oferta_final int not null unique,
 
 constraint	FK_OFERTAFINAL_COLETA
 foreign key	(id_oferta_final)
