@@ -471,7 +471,274 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- ====== TABELA DO TIPO DE MATERIAL ======
+DELIMITER $$
+create procedure procTipoMaterial(
+    IN operacao varchar(30),
+    IN material_param varchar(50),
+    IN id_param int
+)
+BEGIN
+    if operacao = 'SELECT_ALL' then
+        select
+            id as id_tipo_material,
+            material
+        from tbl_tipo_material
+        order by material asc;
 
+    elseif operacao = 'SELECT_BY_ID' then
+        select
+            id as id_tipo_material,
+            material
+        from tbl_tipo_material
+        where id = id_param;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procTipoMaterial.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== TABELA DO STATUS DO RESÍDUO ======
+DELIMITER $$
+create procedure procStatusResiduo(
+    in operacao varchar(30),
+    in status_param varchar(30),
+    in id_param int
+)
+BEGIN
+    if operacao = 'INSERT' then
+        insert into tbl_status_residuo (
+            status
+        ) values (
+            status_param
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'UPDATE' then
+        update tbl_status_residuo
+        set
+            status = status_param
+        where id = id_param;
+        select row_count() as affectedRows;
+
+    elseif operacao = 'SELECT_ALL' then
+        select * from tbl_status_residuo order by id desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        select * from tbl_status_residuo where id = id_param;
+
+    elseif operacao = 'DELETE' then
+        delete from tbl_status_residuo where id = id_param;
+        select row_count() as affectedRows;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procStatusResiduo.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== TABELA DO RESÍDUO ======
+DELIMITER $$
+create procedure procResiduo(
+    IN operacao varchar(30),
+    IN horario_inicial_param time,
+    IN horario_final_param time,
+    IN quantidade_param decimal(6,2),
+    IN data_disponivel_param date,
+    IN observacao_param text,
+    IN id_tipo_material_param int,
+    IN id_estabelecimento_param int,
+    IN id_param int
+)
+BEGIN
+    if operacao = 'INSERT' then
+        insert into tbl_residuo (
+            horario_inicial,
+            horario_final,
+            quantidade,
+            data_disponivel,
+            observacao,
+            id_tipo_material,
+            id_estabelecimento
+        ) values (
+            horario_inicial_param,
+            horario_final_param,
+            quantidade_param,
+            data_disponivel_param,
+            observacao_param,
+            id_tipo_material_param,
+            id_estabelecimento_param
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'UPDATE' then
+        update tbl_residuo
+        set
+            horario_inicial = horario_inicial_param,
+            horario_final = horario_final_param,
+            quantidade = quantidade_param,
+            data_disponivel = data_disponivel_param,
+            observacao = observacao_param,
+            id_tipo_material = id_tipo_material_param
+        where tbl_residuo.id = id_param
+          and tbl_residuo.id_estabelecimento = id_estabelecimento_param
+          and exists (
+              select 1
+              from tbl_status_residuo_historico
+              inner join tbl_status_residuo
+                  on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+              where tbl_status_residuo_historico.id = (
+                  select max(historico.id)
+                  from tbl_status_residuo_historico as historico
+                  where historico.id_residuo = tbl_residuo.id
+              )
+              and tbl_status_residuo.status = 'Disponível'
+          );
+        select row_count() as affectedRows;
+
+    elseif operacao = 'SELECT_FOR_UPDATE' then
+        -- Consulta o resíduo e bloqueia sua linha durante a transação
+        select
+            tbl_residuo.id as id_residuo,
+            tbl_residuo.id_estabelecimento,
+            (
+                select tbl_status_residuo.status
+                from tbl_status_residuo_historico
+                inner join tbl_status_residuo
+                    on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+                where tbl_status_residuo_historico.id_residuo = tbl_residuo.id
+                order by tbl_status_residuo_historico.id desc
+                limit 1
+            ) as status_residuo
+        from tbl_residuo
+        where tbl_residuo.id = id_param
+          and tbl_residuo.id_estabelecimento = id_estabelecimento_param
+        for update;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procResiduo.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== TABELA DO HISTÓRICO DO STATUS DO RESÍDUO ======
+DELIMITER $$
+create procedure procStatusResiduoHistorico(
+    IN operacao varchar(30),
+    IN id_residuo_param int,
+    IN id_status_residuo_param int,
+    IN id_estabelecimento_param int,
+    IN id_param int
+)
+BEGIN
+    declare id_status_encontrado int default null;
+    declare status_atual varchar(30) default null;
+    declare id_residuo_encontrado int default null;
+
+    if operacao = 'INSERT_DISPONIVEL' then
+
+        -- Verifica se o resíduo pertence ao estabelecimento
+        select id into id_residuo_encontrado
+        from tbl_residuo
+        where id = id_residuo_param
+          and id_estabelecimento = id_estabelecimento_param
+        for update;
+
+        if id_residuo_encontrado is null then
+            signal sqlstate '45000'
+            set message_text = 'Resíduo não encontrado.';
+        end if;
+
+        -- Impede a criação de um segundo status inicial
+        if exists (
+            select 1
+            from tbl_status_residuo_historico
+            where id_residuo = id_residuo_param
+        ) then
+            signal sqlstate '45000'
+            set message_text = 'O resíduo já possui histórico de status.';
+        end if;
+
+        select id into id_status_encontrado
+        from tbl_status_residuo
+        where status = 'Disponível'
+        limit 1;
+
+        if id_status_encontrado is null then
+            signal sqlstate '45000'
+            set message_text = 'Status Disponível não encontrado.';
+        end if;
+
+        insert into tbl_status_residuo_historico (
+            id_residuo,
+            id_status_residuo
+        ) values (
+            id_residuo_param,
+            id_status_encontrado
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'INSERT_CANCELADO'
+        or operacao = 'INSERT_AGENDADO' then
+
+        -- Verifica a propriedade e bloqueia o resíduo
+        select id into id_residuo_encontrado
+        from tbl_residuo
+        where id = id_residuo_param
+          and id_estabelecimento = id_estabelecimento_param
+        for update;
+
+        if id_residuo_encontrado is null then
+            signal sqlstate '45000'
+            set message_text = 'Resíduo não encontrado.';
+        end if;
+
+        -- Consulta o status mais recente
+        select tbl_status_residuo.status into status_atual
+        from tbl_status_residuo_historico
+			inner join tbl_status_residuo
+				on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+        where tbl_status_residuo_historico.id_residuo = id_residuo_param
+        order by tbl_status_residuo_historico.id desc
+        limit 1;
+
+        if status_atual is null or status_atual <> 'Disponível' then
+            signal sqlstate '45000'
+            set message_text = 'O resíduo não está disponível.';
+        end if;
+
+        select id into id_status_encontrado
+        from tbl_status_residuo
+        where status = case
+            when operacao = 'INSERT_CANCELADO' then 'Cancelado'
+            when operacao = 'INSERT_AGENDADO' then 'Agendado'
+        end
+        limit 1;
+
+        if id_status_encontrado is null then
+            signal sqlstate '45000'
+            set message_text = 'Status do resíduo não encontrado.';
+        end if;
+
+        insert into tbl_status_residuo_historico (
+            id_residuo,
+            id_status_residuo
+        ) values (
+            id_residuo_param,
+            id_status_encontrado
+        );
+        select last_insert_id() as id;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procStatusResiduoHistorico.';
+    end if;
+END $$
+DELIMITER ;
 
 -- -----------------------------------------------------
 -- ---              EMPRESA COLETORA              ------
