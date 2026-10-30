@@ -75,37 +75,48 @@ select
 	) as soma_total_quantidade,
 
     (
-		## Conta somente as ofertas que estão atualmente Pendentes
-		select
-			count(*)
-		from tbl_oferta_inicial
-		inner join tbl_residuo
-			on tbl_residuo.id = tbl_oferta_inicial.id_residuo
-		inner join (
-        ## Pega o último status de cada oferta
+		## Conta somente as ofertas que estão Pendentes
+        ## e pertencem a resíduos atualmente Disponíveis
         select
-            tbl_status_oferta_historico.id_oferta_inicial,
-            tbl_status_oferta_historico.id_status_oferta
-
-        from tbl_status_oferta_historico
-
-        where tbl_status_oferta_historico.id in (
+            count(*)
+        from tbl_oferta_inicial
+        inner join tbl_residuo
+            on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+        inner join (
+            ## Pega o último status de cada oferta
             select
-                max(tbl_status_oferta_historico.id)
-
+                tbl_status_oferta_historico.id_oferta_inicial,
+                tbl_status_oferta_historico.id_status_oferta
             from tbl_status_oferta_historico
+            where tbl_status_oferta_historico.id in (
+                select
+                    max(tbl_status_oferta_historico.id)
+                from tbl_status_oferta_historico
+                group by tbl_status_oferta_historico.id_oferta_inicial
+            )
+        ) as ultimo_status
+            on ultimo_status.id_oferta_inicial = tbl_oferta_inicial.id
+        inner join tbl_status_oferta
+            on tbl_status_oferta.id = ultimo_status.id_status_oferta
 
-            group by tbl_status_oferta_historico.id_oferta_inicial
-        )
-    ) as ultimo_status
-		on ultimo_status.id_oferta_inicial = tbl_oferta_inicial.id
+        where tbl_residuo.id_estabelecimento = tbl_estabelecimento.id
+            and tbl_status_oferta.status = 'Pendente'
+            ## Verifica se o último status do resíduo é Disponível
+            and exists (
+                select 1
+                from tbl_status_residuo_historico
+                inner join tbl_status_residuo
+                    on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+                where tbl_status_residuo_historico.id_residuo = tbl_residuo.id
+                    and tbl_status_residuo_historico.id = (
+                        select max(historico.id)
+                        from tbl_status_residuo_historico as historico
+                        where historico.id_residuo = tbl_residuo.id
+                    )
+                    and tbl_status_residuo.status = 'Disponível'
+            )
 
-	inner join tbl_status_oferta
-		on tbl_status_oferta.id = ultimo_status.id_status_oferta
-
-	where tbl_residuo.id_estabelecimento = tbl_estabelecimento.id
-		and tbl_status_oferta.status = 'Pendente'
-) as ofertas_recebidas,
+    ) as ofertas_recebidas,
 
     (
         ## Conta as coletas agendadas do estabelecimento
@@ -179,8 +190,19 @@ where tbl_status_oferta_historico.id in (
         max(tbl_status_oferta_historico.id)
     from tbl_status_oferta_historico
     group by tbl_status_oferta_historico.id_oferta_inicial
+) and exists (
+    select 1
+    from tbl_status_residuo_historico
+    inner join tbl_status_residuo
+        on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+    where tbl_status_residuo_historico.id_residuo = tbl_residuo.id
+    and tbl_status_residuo_historico.id = (
+        select max(historico.id)
+        from tbl_status_residuo_historico as historico
+        where historico.id_residuo = tbl_residuo.id
+    )
+    and tbl_status_residuo.status = 'Disponível'
 )
-
 and tbl_status_oferta.status = 'Pendente';
 
 -- ====== nome da view ======
@@ -654,36 +676,46 @@ select
     ) as residuos_disponiveis,
 
     (
-		## Conta somente as ofertas desta empresa que estão atualmente Pendentes
-		select
-			count(*)
-		from tbl_oferta_inicial
-
-		inner join (
-        ## Pega o último status de cada oferta
+        ## Conta somente as ofertas desta empresa que estão Pendentes
+        ## e pertencem a resíduos atualmente Disponíveis
         select
-            tbl_status_oferta_historico.id_oferta_inicial,
-            tbl_status_oferta_historico.id_status_oferta
-
-        from tbl_status_oferta_historico
-
-        where tbl_status_oferta_historico.id in (
+            count(*)
+        from tbl_oferta_inicial
+        inner join tbl_residuo
+            on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+        inner join (
+            ## Pega o último status de cada oferta
             select
-                max(tbl_status_oferta_historico.id)
-
+                tbl_status_oferta_historico.id_oferta_inicial,
+                tbl_status_oferta_historico.id_status_oferta
             from tbl_status_oferta_historico
-
-            group by tbl_status_oferta_historico.id_oferta_inicial
-        )
-    ) as ultimo_status
-		on ultimo_status.id_oferta_inicial = tbl_oferta_inicial.id
-
-	inner join tbl_status_oferta
-		on tbl_status_oferta.id = ultimo_status.id_status_oferta
-
-	where tbl_oferta_inicial.id_empresa_coletora = tbl_empresa_coletora.id
-		and tbl_status_oferta.status = 'Pendente'
-) as ofertas_enviadas,
+            where tbl_status_oferta_historico.id in (
+                select
+                    max(tbl_status_oferta_historico.id)
+                from tbl_status_oferta_historico
+                group by tbl_status_oferta_historico.id_oferta_inicial
+            )
+        ) as ultimo_status
+            on ultimo_status.id_oferta_inicial = tbl_oferta_inicial.id
+        inner join tbl_status_oferta
+            on tbl_status_oferta.id = ultimo_status.id_status_oferta
+        where tbl_oferta_inicial.id_empresa_coletora = tbl_empresa_coletora.id
+            and tbl_status_oferta.status = 'Pendente'
+            ## Verifica se o último status do resíduo é Disponível
+            and exists (
+                select 1
+                from tbl_status_residuo_historico
+                inner join tbl_status_residuo
+                    on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+                where tbl_status_residuo_historico.id_residuo = tbl_residuo.id
+                    and tbl_status_residuo_historico.id = (
+                        select max(historico.id)
+                        from tbl_status_residuo_historico as historico
+                        where historico.id_residuo = tbl_residuo.id
+                    )
+                    and tbl_status_residuo.status = 'Disponível'
+            )
+    ) as ofertas_enviadas,
 
     (
         ## Conta as coletas agendadas da empresa coletora
@@ -834,10 +866,25 @@ where tbl_status_oferta_historico.id in (
     group by tbl_status_oferta_historico.id_oferta_inicial
 )
 and (
-    -- Oferta ainda aguardando decisão do estabelecimento
-    tbl_status_oferta.status = 'Pendente'
+    -- Oferta pendente somente se o resíduo ainda estiver disponível
+    (
+        tbl_status_oferta.status = 'Pendente'
+        and exists (
+            select 1
+            from tbl_status_residuo_historico
+            inner join tbl_status_residuo
+                on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+            where tbl_status_residuo_historico.id_residuo = tbl_residuo.id
+            and tbl_status_residuo_historico.id = (
+                select max(historico.id)
+                from tbl_status_residuo_historico as historico
+                where historico.id_residuo = tbl_residuo.id
+            )
+            and tbl_status_residuo.status = 'Disponível'
+        )
+    )
     or
-    -- Oferta aceita, mas somente enquanto a coleta estiver agendada
+    -- Oferta aceita somente enquanto a coleta estiver agendada
     (
         tbl_status_oferta.status = 'Aceita'
         and tbl_status_coleta.status = 'Agendada'
