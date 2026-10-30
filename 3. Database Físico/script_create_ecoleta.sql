@@ -240,7 +240,7 @@ references	tbl_estabelecimento(id)
 -- Tabela de Oferta Final - PRINCIPAL que depende das 2 tabelas de oferta SEMIPRINCIPAL
 create table tbl_oferta_final (
 id 					int not null auto_increment primary key,
-id_oferta_inicial 	int not null,
+id_oferta_inicial 	int not null unique,
 id_oferta_aceita 	int not null,
 
 constraint	FK_OFERTAINICIAL_OFERTAFINAL
