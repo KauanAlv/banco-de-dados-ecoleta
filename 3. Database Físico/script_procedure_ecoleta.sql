@@ -503,9 +503,9 @@ DELIMITER ;
 -- ====== TABELA DO STATUS DO RESÍDUO ======
 DELIMITER $$
 create procedure procStatusResiduo(
-    in operacao varchar(30),
-    in status_param varchar(30),
-    in id_param int
+    IN operacao varchar(30),
+    IN status_param varchar(30),
+    IN id_param int
 )
 BEGIN
     if operacao = 'INSERT' then
@@ -740,6 +740,59 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- ====== PROCEDURE PARA RECUSAR AS OFERTAS PENDENTES ======
+DELIMITER $$
+create procedure procRecusarOfertasPendentesResiduo(
+    IN id_residuo_param int,
+    IN id_estabelecimento_param int
+)
+BEGIN
+	declare id_status_recusada int default null;
+	
+    -- Busca o ID do status Recusada
+    select id
+    into id_status_recusada
+    from tbl_status_oferta
+    where status = 'Recusada'
+    limit 1;
+    
+    -- Verifica se o status existe
+    if id_status_recusada is null then
+        signal sqlstate '45000'
+        set message_text = 'O status Recusada não foi encontrado.';
+    end if;
+    
+    -- Insere Recusada no histórico das ofertas pendentes
+    insert into tbl_status_oferta_historico (
+        id_oferta_inicial,
+        id_status_oferta
+    )
+    select
+        tbl_oferta_inicial.id,
+        id_status_recusada
+    from tbl_oferta_inicial
+		inner join tbl_residuo
+			on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+		inner join tbl_status_oferta_historico
+			on tbl_oferta_inicial.id = tbl_status_oferta_historico.id_oferta_inicial
+		inner join tbl_status_oferta
+			on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+            
+	 where tbl_oferta_inicial.id_residuo = id_residuo_param
+     -- Garante que o resíduo pertence ao estabelecimento
+		and tbl_residuo.id_estabelecimento = id_estabelecimento_param
+     
+     -- Verifica o status mais recente da oferta
+        and tbl_status_oferta_historico.id = (
+            select max(historico.id)
+            from tbl_status_oferta_historico as historico
+            where historico.id_oferta_inicial = tbl_oferta_inicial.id
+        )
+        and tbl_status_oferta.status = 'Pendente';
+    select row_count() as affectedRows;
+END $$
+DELIMITER ;
+
 -- ====== PROCEDURE PARA A TELA DE COLETAS DO ESTABELECIMENTO ======
 DELIMITER $$
 create procedure procTelaColetasEstabelecimento(
@@ -776,6 +829,182 @@ BEGIN
         signal sqlstate '45000'
         set message_text = 'Operação inválida na procTelaColetasEstabelecimento.';
 
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== TABELA DA OFERTA ACEITA ======
+DELIMITER $$
+create procedure procOfertaAceita(
+    IN operacao varchar(30),
+    IN nome_aceitante_param varchar(100),
+    IN id_estabelecimento_param int
+)
+BEGIN
+    if operacao = 'INSERT' then
+        -- Insere os dados do funcionário que aceitou a oferta
+        insert into tbl_oferta_aceita (
+            nome_aceitante,
+            id_estabelecimento
+        ) values (
+            nome_aceitante_param,
+            id_estabelecimento_param
+        );
+        select last_insert_id() as id;
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procOfertaAceita.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== TABELA DA OFERTA FINAL ======
+DELIMITER $$
+create procedure procOfertaFinal(
+    IN operacao varchar(30),
+    IN id_oferta_inicial_param int,
+    IN id_oferta_aceita_param int
+)
+BEGIN
+    if operacao = 'INSERT' then
+        -- Vincula a oferta inicial com a oferta aceita
+        insert into tbl_oferta_final (
+            id_oferta_inicial,
+            id_oferta_aceita
+        ) values (
+            id_oferta_inicial_param,
+            id_oferta_aceita_param
+        );
+        select last_insert_id() as id;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procOfertaFinal.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== TABELA DO STATUS DA COLETA ======
+DELIMITER $$
+create procedure procStatusColeta(
+    IN operacao varchar(30),
+    IN status_param varchar(30),
+    IN id_param int
+)
+BEGIN
+    if operacao = 'INSERT' then
+        insert into tbl_status_coleta (
+            status
+        ) values (
+            status_param
+        );
+        select last_insert_id() as id;
+
+    elseif operacao = 'UPDATE' then
+        update tbl_status_coleta
+        set
+            status = status_param
+        where id = id_param;
+        select row_count() as affectedRows;
+
+    elseif operacao = 'SELECT_ALL' then
+        select * from tbl_status_coleta order by id desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        select * from tbl_status_coleta where id = id_param;
+
+    elseif operacao = 'DELETE' then
+        delete from tbl_status_coleta where id = id_param;
+        select row_count() as affectedRows;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procStatusColeta.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== TABELA DA COLETA ======
+DELIMITER $$
+create procedure procColeta(
+    IN operacao varchar(30),
+    IN id_oferta_final_param int
+)
+BEGIN
+    if operacao = 'INSERT' then
+        -- Cria uma nova coleta vinculada à oferta final
+        insert into tbl_coleta (
+            id_oferta_final
+        ) values (
+            id_oferta_final_param
+        );
+        select last_insert_id() as id;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procColeta.';
+    end if;
+
+END $$
+DELIMITER ;
+
+-- ====== TABELA DO HISTÓRICO DO STATUS DA COLETA ======
+DELIMITER $$
+create procedure procStatusColetaHistorico(
+    IN operacao varchar(30),
+    IN id_coleta_param int
+)
+BEGIN
+    declare id_status_agendada int default null;
+    declare id_coleta_encontrada int default null;
+
+    if operacao = 'INSERT_AGENDADA' then
+        -- Verifica se a coleta existe e bloqueia sua linha
+        select id into id_coleta_encontrada
+        from tbl_coleta
+        where id = id_coleta_param
+        for update;
+        
+        if id_coleta_encontrada is null then
+            signal sqlstate '45000'
+            set message_text = 'Coleta não encontrada.';
+        end if;
+
+        -- Impede a criação de um segundo status inicial
+        if exists (
+            select 1
+            from tbl_status_coleta_historico
+            where id_coleta = id_coleta_param
+        ) then
+            signal sqlstate '45000'
+            set message_text = 'A coleta já possui histórico de status.';
+        end if;
+
+        -- Busca o ID do status Agendada
+        select id into id_status_agendada
+        from tbl_status_coleta
+        where status = 'Agendada'
+        limit 1;
+
+        -- Verifica se o status existe
+        if id_status_agendada is null then
+            signal sqlstate '45000'
+            set message_text = 'Status Agendada não encontrado.';
+        end if;
+
+        -- Insere o primeiro status da coleta
+        insert into tbl_status_coleta_historico (
+            id_coleta,
+            id_status_coleta
+        ) values (
+            id_coleta_param,
+            id_status_agendada
+        );
+        select last_insert_id() as id;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procStatusColetaHistorico.';
     end if;
 END $$
 DELIMITER ;
@@ -938,9 +1167,9 @@ DELIMITER ;
 -- ====== TABELA DO STATUS DA OFERTA ======
 DELIMITER $$
 create procedure procStatusOferta(
-    in operacao varchar(30),
-    in status_param varchar(30),
-    in id_param int
+    IN operacao varchar(30),
+    IN status_param varchar(30),
+    IN id_param int
 )
 BEGIN
 	if operacao = 'INSERT' then
@@ -1098,6 +1327,8 @@ create procedure procStatusOfertaHistorico(
 )
 BEGIN
     declare id_status_pendente int default null;
+    declare id_status_aceita int default null;
+    declare id_status_recusada int default null;
 
     if operacao = 'INSERT_PENDENTE' then
         -- Passa o id que tem o status pendente para ser o id_status_pendente
@@ -1121,6 +1352,52 @@ BEGIN
             id_status_pendente
         );
         select last_insert_id() as id;
+        
+	elseif operacao = 'INSERT_ACEITA' then
+		-- Busca o ID do status Aceita
+		select id into id_status_aceita
+		from tbl_status_oferta
+		where status = 'Aceita'
+		limit 1;
+
+		-- Verifica se o status existe
+		if id_status_aceita is null then
+			signal sqlstate '45000'
+			set message_text = 'Status Aceita não encontrado.';
+		end if;
+
+		-- Insere o status Aceita no histórico da oferta
+		insert into tbl_status_oferta_historico (
+			id_oferta_inicial,
+			id_status_oferta
+		) values (
+			id_oferta_inicial_param,
+			id_status_aceita
+		);
+		select last_insert_id() as id;
+        
+	elseif operacao = 'INSERT_RECUSADA' then
+		-- Busca o ID do status Recusada
+		select id into id_status_recusada
+		from tbl_status_oferta
+		where status = 'Recusada'
+		limit 1;
+
+		-- Verifica se o status existe
+		if id_status_recusada is null then
+			signal sqlstate '45000'
+			set message_text = 'Status Recusada não encontrado.';
+		end if;
+
+		-- Insere o status Recusada no histórico da oferta
+		insert into tbl_status_oferta_historico (
+			id_oferta_inicial,
+			id_status_oferta
+		) values (
+			id_oferta_inicial_param,
+			id_status_recusada
+		);
+		select last_insert_id() as id;
 
     elseif operacao = 'INSERT' then
         -- Insere uma nova alteração no histórico da oferta
