@@ -740,6 +740,47 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- ====== PROCEDURE PARA A TELA DE COLETAS DO ESTABELECIMENTO ======
+DELIMITER $$
+create procedure procTelaColetasEstabelecimento(
+    IN operacao varchar(30),
+    IN id_estabelecimento_param int,
+    IN id_oferta_inicial_param int
+)
+BEGIN
+    if operacao = 'SELECT_ALL' then
+        -- Consulta todas as ofertas pendentes e aceitas do estabelecimento
+        select
+            vw_coletas_estabelecimento.*,
+            tbl_distancia.distancia
+        from vw_coletas_estabelecimento
+			left join tbl_distancia
+				on tbl_distancia.id_estabelecimento = vw_coletas_estabelecimento.id_estabelecimento
+				and tbl_distancia.id_empresa_coletora = vw_coletas_estabelecimento.id_empresa_coletora
+        where vw_coletas_estabelecimento.id_estabelecimento = id_estabelecimento_param
+        order by vw_coletas_estabelecimento.id_oferta_inicial desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        -- Consulta uma oferta específica pertencente ao estabelecimento
+        select
+            vw_coletas_estabelecimento.*,
+            tbl_distancia.distancia
+        from vw_coletas_estabelecimento
+			left join tbl_distancia
+				on tbl_distancia.id_estabelecimento = vw_coletas_estabelecimento.id_estabelecimento
+				and tbl_distancia.id_empresa_coletora = vw_coletas_estabelecimento.id_empresa_coletora
+        where vw_coletas_estabelecimento.id_estabelecimento = id_estabelecimento_param
+          and vw_coletas_estabelecimento.id_oferta_inicial = id_oferta_inicial_param;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procTelaColetasEstabelecimento.';
+
+    end if;
+END $$
+DELIMITER ;
+
+
 -- -----------------------------------------------------
 -- ---              EMPRESA COLETORA              ------
 -- -----------------------------------------------------
