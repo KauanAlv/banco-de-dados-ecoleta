@@ -305,7 +305,6 @@ select
     tbl_estabelecimento.id as id_estabelecimento,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
     tbl_residuo.id as id_residuo, tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final,
-    tbl_distancia.id as id_distancia, tbl_distancia.distancia,
     tbl_oferta_inicial.id as id_oferta_inicial, tbl_oferta_inicial.valor_ofertado,
     tbl_status_oferta.status as status_oferta
     
@@ -319,9 +318,6 @@ inner join tbl_tipo_material
 	on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_estabelecimento
     on tbl_estabelecimento.id = tbl_residuo.id_estabelecimento
-left join tbl_distancia
-    on tbl_distancia.id_estabelecimento = tbl_estabelecimento.id
-		and tbl_distancia.id_empresa_coletora = tbl_empresa_coletora.id
 inner join tbl_status_oferta_historico
     on tbl_status_oferta_historico.id_oferta_inicial = tbl_oferta_inicial.id
 inner join tbl_status_oferta
