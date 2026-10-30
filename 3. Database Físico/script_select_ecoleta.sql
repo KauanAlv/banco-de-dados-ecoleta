@@ -221,8 +221,38 @@ select
     tbl_estabelecimento.id as id_estabelecimento,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
 	tbl_residuo.quantidade, tbl_residuo.data_disponivel, tbl_residuo.horario_inicial, tbl_residuo.horario_final, tbl_residuo.observacao,
-	tbl_status_residuo.id as id_status_residuo, tbl_status_residuo.status as status_residuo
-    
+    -- Status real do resíduo
+	tbl_status_residuo.id as id_status_residuo, tbl_status_residuo.status as status_residuo,
+    -- Define o status que será exibido no card
+    case
+        -- Verifica se o resíduo possui uma coleta Aguardando Finalização
+        when tbl_status_residuo.status = 'Agendado'
+            and exists (
+                select 1
+                from tbl_coleta
+					inner join tbl_oferta_final
+						on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+					inner join tbl_oferta_inicial
+						on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+					inner join tbl_status_coleta_historico
+						on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
+					inner join tbl_status_coleta
+						on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+                where tbl_residuo.id = tbl_oferta_inicial.id_residuo
+                    -- Pega o último status da coleta
+                    and tbl_status_coleta_historico.id = (
+                        select max(historico.id)
+                        from tbl_status_coleta_historico as historico
+                        where tbl_coleta.id = historico.id_coleta
+                    )
+                    and tbl_status_coleta.status = 'Aguardando Finalização'
+            )
+        then 'Aguardando Finalização'
+        -- Caso contrário, mantém o status real do resíduo
+        else tbl_status_residuo.status
+        -- Da o nome para a coluna que vai aparecer, como status_card
+    end as status_card
+
 from tbl_residuo
 	inner join tbl_tipo_material
 		on tbl_tipo_material.id = tbl_residuo.id_tipo_material
@@ -240,22 +270,23 @@ where tbl_status_residuo_historico.id in (
 )
 and tbl_status_residuo.status in ('Disponível', 'Agendado')
 
+-- Não exibe resíduos que possuem coleta Concluída
 and not exists (
     select 1
     from tbl_coleta
-    inner join tbl_status_coleta_historico
-        on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
-    inner join tbl_status_coleta
-        on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
-    inner join tbl_oferta_final
-        on tbl_oferta_final.id = tbl_coleta.id_oferta_final
-    inner join tbl_oferta_inicial
-        on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+		inner join tbl_status_coleta_historico
+			on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
+		inner join tbl_status_coleta
+			on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+		inner join tbl_oferta_final
+			on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+		inner join tbl_oferta_inicial
+			on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
     where tbl_oferta_inicial.id_residuo = tbl_residuo.id
     and tbl_status_coleta_historico.id = (
-        select max(tbl_status_coleta_historico.id)
-        from tbl_status_coleta_historico
-        where tbl_status_coleta_historico.id_coleta = tbl_coleta.id
+        select max(historico.id)
+        from tbl_status_coleta_historico as historico
+        where historico.id_coleta = tbl_coleta.id
     )
     and tbl_status_coleta.status = 'Concluída'
 );
