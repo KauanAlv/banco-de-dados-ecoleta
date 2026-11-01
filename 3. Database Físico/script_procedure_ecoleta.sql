@@ -359,6 +359,96 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- ====== PROCEDURE PARA ATUALIZAR AUTOMATICAMENTE O STATUS DAS COLETAS ATRASADAS NA FINALIZAÇÃO ======
+DELIMITER $$
+create procedure procAtualizarColetasAtrasadas()
+BEGIN
+    declare id_status_aguardando int default null;
+
+    -- Busca o ID do status Aguardando Finalização
+    select id into id_status_aguardando
+    from tbl_status_coleta
+    where status = 'Aguardando Finalização'
+    limit 1;
+
+    -- Verifica se o status existe
+    if id_status_aguardando is null then
+        signal sqlstate '45000'
+        set message_text = 'Status Aguardando Finalização não encontrado.';
+    end if;
+
+    -- Insere o novo status para as coletas agendadas que ultrapassaram o prazo
+    insert into tbl_status_coleta_historico (
+        id_coleta,
+        id_status_coleta
+    )
+    select
+        tbl_coleta.id,
+        id_status_aguardando
+    from tbl_coleta
+		inner join tbl_oferta_final
+			on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+		inner join tbl_oferta_inicial
+			on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+		inner join tbl_residuo
+			on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+		inner join tbl_status_coleta_historico
+			on tbl_status_coleta_historico.id = (
+				select max(historico.id)
+				from tbl_status_coleta_historico as historico
+				where historico.id_coleta = tbl_coleta.id
+			)
+		inner join tbl_status_coleta
+			on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+    where tbl_status_coleta.status = 'Agendada'
+
+      -- Verifica se a data e o horário final já passaram
+      and timestamp(
+          tbl_residuo.data_disponivel,
+          tbl_residuo.horario_final
+      ) < now();
+    select row_count() as affectedRows;
+END $$
+DELIMITER ;
+
+-- ====== UTILIZAR PARA A PROCEDURE DE CIMA, SOMENTE SE O MYSQL NÃO ESTIVER NO HORÁRIO DE BRASÍLIA ======
+-- Verifica se o Event Scheduler está ativo
+### show variables like 'event_scheduler';
+-- Se estiver off faça:
+### set global event_scheduler = ON;
+-- Configura o horário de Brasília na sessão (Caso não esteja no horário de Brasília)
+### set time_zone = '-03:00';
+-- Exibe o fuso horário que está configura no MySQL
+### select
+###     @@global.time_zone as fuso_global,
+###     @@session.time_zone as fuso_sessao,
+###     @@system_time_zone as fuso_sistema;
+-- Exibe a data e a hora do fuso horário no MySQL, no UTC e a diferença entre os 2 
+### select
+###     now() as data_hora_mysql,
+###     utc_timestamp() as data_hora_utc,
+###     timediff(now(), utc_timestamp()) as diferenca_utc;
+
+-- ====== EVENTO PARA ATUALIZAR AUTOMATICAMENTE AS COLETAS ATRASADAS ======
+DELIMITER $$
+-- Cria um evento automático (semelhante a um despertador)
+create event evAtualizarColetasAtrasadas
+-- ON SCHEDULE: define o agendamento | EVERY: indica que a execução será repetida | 1 MINUTE: define o intervalo de um minuto;
+-- Ou seja, o MySQL executará o evento a cada minuto.
+on schedule every 1 minute
+-- Determina que o evento será criado habilitado para execução
+enable
+-- Indica qual ação o MySQL deve executar quando chegar o momento agendado
+do
+-- A ação é:
+BEGIN
+    call procAtualizarColetasAtrasadas();
+END $$
+DELIMITER ;
+
+-- Serve para visualizar os eventos criados
+### SHOW EVENTS;
+
 
 -- -----------------------------------------------------
 -- ---              ESTABELECIMENTO               ------
