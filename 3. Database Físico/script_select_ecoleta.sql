@@ -340,7 +340,7 @@ where tbl_status_coleta_historico.id in (
     from tbl_status_coleta_historico
     group by tbl_status_coleta_historico.id_coleta
 )
-and tbl_status_coleta.status in ('Agendada', 'Aguardando Finalização');
+and tbl_status_coleta.status = 'Agendada';
 
 -- ====== nome da view ======
 select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and id_residuo = 2;
