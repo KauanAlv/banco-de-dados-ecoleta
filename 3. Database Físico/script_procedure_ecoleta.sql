@@ -1299,16 +1299,32 @@ BEGIN
                 select tbl_status_residuo.status
                 from tbl_status_residuo_historico
                 inner join tbl_status_residuo
-                    on tbl_status_residuo.id =
-                       tbl_status_residuo_historico.id_status_residuo
-                where tbl_status_residuo_historico.id_residuo =
-                      tbl_residuo.id
+                    on tbl_status_residuo.id = tbl_status_residuo_historico.id_status_residuo
+                where tbl_residuo.id = tbl_status_residuo_historico.id_residuo
                 order by tbl_status_residuo_historico.id desc
                 limit 1
             ) as status_residuo
         from tbl_residuo
         where tbl_residuo.id = id_residuo_param
         for update;
+        
+        elseif operacao = 'SELECT_BY_ID_FOR_UPDATE' then
+			-- Consulta e bloqueia a oferta para verificar seu status mais recente
+			select
+				tbl_oferta_inicial.id as id_oferta_inicial, tbl_oferta_inicial.id_residuo,
+				tbl_residuo.id_estabelecimento,
+				tbl_status_oferta.status as status_oferta
+			from tbl_oferta_inicial
+				inner join tbl_residuo
+					on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+				inner join tbl_status_oferta_historico
+					on tbl_oferta_inicial.id = tbl_status_oferta_historico.id_oferta_inicial
+				inner join tbl_status_oferta
+					on tbl_status_oferta.id = tbl_status_oferta_historico.id_status_oferta
+			where tbl_oferta_inicial.id = id_param
+			order by tbl_status_oferta_historico.id desc
+			limit 1
+			for update;
 
     else
         signal sqlstate '45000'
