@@ -364,50 +364,128 @@ DELIMITER $$
 create procedure procAtualizarColetasAtrasadas()
 BEGIN
     declare id_status_aguardando int default null;
+    declare id_coleta_atual int default null;
+    declare id_coleta_encontrada int default null;
+    declare status_atual varchar(30) default null;
+    declare fim boolean default false;
+    declare total_atualizadas int default 0;
+
+    -- Percorre as coletas cujo prazo já terminou
+		-- Um CURSOR permite percorrer os resultados de um SELECT, uma linha de cada vez
+    declare cursor_coletas cursor for
+        select tbl_coleta.id
+        from tbl_coleta
+            inner join tbl_oferta_final
+                on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+            inner join tbl_oferta_inicial
+                on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+            inner join tbl_residuo
+                on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+        where timestamp(
+            tbl_residuo.data_disponivel,
+            tbl_residuo.horario_final
+        ) < now()
+        and exists (
+            select 1
+            from tbl_status_coleta_historico
+                inner join tbl_status_coleta
+                    on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+            where tbl_status_coleta_historico.id = (
+                select max(historico.id)
+                from tbl_status_coleta_historico as historico
+                where tbl_coleta.id = historico.id_coleta
+            )
+            and tbl_status_coleta.status = 'Agendada'
+        );
+        
+    -- Identifica quando não existem mais coletas para percorrer
+		-- Essa instrução serve para avisar quando o cursor terminou de percorrer todos os registros.
+    -- DECLARE ... HANDLER: define como o MySQL deve reagir a uma determinada situação | CONTINUE: permite que a execução continue após tratar essa situação | NOT FOUND: identifica quando uma busca não encontrou mais registros | SET fim = true: altera a variável fim para indicar que o cursor terminou
+    declare continue handler for not found set fim = true;
+    -- Desfaz as operações em caso de erro
+		-- Define o que o MySQL deve fazer se ocorrer um erro SQL durante a execução da procedure
+			-- EXIT é parecido com o catch (error) (a execução sairá do bloco em que esse handler foi declarado)
+    declare exit handler for sqlexception
+    BEGIN
+        rollback;
+        resignal;
+    END;
 
     -- Busca o ID do status Aguardando Finalização
     select id into id_status_aguardando
     from tbl_status_coleta
     where status = 'Aguardando Finalização'
     limit 1;
-
     -- Verifica se o status existe
     if id_status_aguardando is null then
         signal sqlstate '45000'
         set message_text = 'Status Aguardando Finalização não encontrado.';
     end if;
 
-    -- Insere o novo status para as coletas agendadas que ultrapassaram o prazo
-    insert into tbl_status_coleta_historico (
-        id_coleta,
-        id_status_coleta
-    )
-    select
-        tbl_coleta.id,
-        id_status_aguardando
-    from tbl_coleta
-		inner join tbl_oferta_final
-			on tbl_oferta_final.id = tbl_coleta.id_oferta_final
-		inner join tbl_oferta_inicial
-			on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
-		inner join tbl_residuo
-			on tbl_residuo.id = tbl_oferta_inicial.id_residuo
-		inner join tbl_status_coleta_historico
-			on tbl_status_coleta_historico.id = (
-				select max(historico.id)
-				from tbl_status_coleta_historico as historico
-				where historico.id_coleta = tbl_coleta.id
-			)
-		inner join tbl_status_coleta
-			on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
-    where tbl_status_coleta.status = 'Agendada'
+	-- Inicia a transação antes de abrir o cursor
+    start transaction;
+    -- Abre o cursor, preparando-o para percorrer os resultados da consulta
+    open cursor_coletas;
+	-- O LOOP é uma estrutura de repetição, semelhante a um while no JavaScript
+    percorrer_coletas: LOOP -- percorrer_coletas é o nome que quis definir
+		-- Pega o próximo registro do cursor e coloca seu valor na variável id_coleta_atual
+        fetch cursor_coletas into id_coleta_atual;
+		-- Quando não houver mais coletas para percorrer, o handler definirá fim = true
+        if fim then
+			-- Encerra o LOOP
+            leave percorrer_coletas;
+        end if;
+		-- Começa como null porque essas variáveis são reutilizadas para processar várias coletas
+        set id_coleta_encontrada = null;
+        set status_atual = null;
+        -- Bloqueia a coleta até o commit
+        BEGIN
+			declare continue handler for not found set id_coleta_encontrada = null;
 
-      -- Verifica se a data e o horário final já passaram
-      and timestamp(
-          tbl_residuo.data_disponivel,
-          tbl_residuo.horario_final
-      ) < now();
-    select row_count() as affectedRows;
+			select id into id_coleta_encontrada
+			from tbl_coleta
+			where id = id_coleta_atual
+			for update;
+		END;
+
+        if id_coleta_encontrada is not null then
+            -- Consulta novamente o status mais recente após bloquear a coleta
+            BEGIN
+                declare continue handler for not found set status_atual = null;
+
+                select tbl_status_coleta.status into status_atual
+                from tbl_status_coleta_historico
+                    inner join tbl_status_coleta
+                        on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+                where tbl_status_coleta_historico.id_coleta = id_coleta_atual
+                order by tbl_status_coleta_historico.id desc
+                limit 1
+                for update;
+            END;
+
+            -- Insere o novo status somente se a coleta continuar Agendada
+            if status_atual = 'Agendada' then
+                insert into tbl_status_coleta_historico (
+                    id_coleta,
+                    id_status_coleta
+                ) values (
+                    id_coleta_atual,
+                    id_status_aguardando
+                );
+                set total_atualizadas = total_atualizadas + 1;
+            end if;
+        end if;
+	-- Marca o final do bloco de repetição
+    END LOOP;
+    -- Fecha o cursor depois que terminar de percorrer os registros
+    close cursor_coletas;
+    
+	-- Confirma as alterações e libera os bloqueios
+	commit;
+    
+    select total_atualizadas as affectedRows;
+    ## Comparando com o JavaScript, toda essa estrutura acima é semelhante a um FOR OF percorrendo um Array.
+		## A diferença é que o MySQL utiliza CURSOR, FETCH, LOOP e HANDLER para implementar esse percurso dentro de uma  procedure
 END $$
 DELIMITER ;
 
@@ -1018,7 +1096,13 @@ DELIMITER ;
 DELIMITER $$
 create procedure procColeta(
     IN operacao varchar(30),
-    IN id_oferta_final_param int
+    IN id_oferta_final_param int,
+    IN nome_coletor_param varchar(100),
+    IN placa_veiculo_param varchar(12),
+    IN data_coleta_param date,
+    IN hora_coleta_param time,
+    IN id_empresa_coletora_param int,
+    IN id_param int
 )
 BEGIN
     if operacao = 'INSERT' then
@@ -1029,12 +1113,80 @@ BEGIN
             id_oferta_final_param
         );
         select last_insert_id() as id;
+        
+	elseif operacao = 'SELECT_FOR_UPDATE' then
+        -- Consulta e bloqueia a coleta, verificando se pertence à empresa coletora autenticada
+        select
+            tbl_coleta.id as id_coleta, tbl_coleta.nome_coletor, tbl_coleta.placa_veiculo, tbl_coleta.data_coleta, tbl_coleta.hora_coleta,
+            date_format(tbl_residuo.data_disponivel, '%Y-%m-%d') as data_disponivel,
+            tbl_oferta_inicial.id_empresa_coletora, tbl_status_coleta.status as status_coleta
+		from tbl_coleta
+			inner join tbl_oferta_final
+				on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+			inner join tbl_oferta_inicial
+				on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+			inner join tbl_residuo
+				on tbl_residuo.id = tbl_oferta_inicial.id_residuo
+			left join tbl_status_coleta_historico
+				on tbl_status_coleta_historico.id = (
+					select max(historico.id)
+					from tbl_status_coleta_historico as historico
+					where tbl_coleta.id = historico.id_coleta
+				)
+			left join tbl_status_coleta
+				on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+		where tbl_coleta.id = id_param 
+			and tbl_oferta_inicial.id_empresa_coletora = id_empresa_coletora_param
+		for update;
+
+    elseif operacao = 'UPDATE' then
+    
+    -- Verifica se todos os dados obrigatórios foram informados
+		if nome_coletor_param is null
+			or trim(nome_coletor_param) = ''
+			or placa_veiculo_param is null
+			or trim(placa_veiculo_param) = ''
+			or data_coleta_param is null
+			or hora_coleta_param is null then
+				signal sqlstate '45000'
+				set message_text = 'Todos os dados da coleta são obrigatórios para finalização.';
+		end if;
+        
+        -- Preenche os dados da coleta realizada pela empresa coletora
+        update tbl_coleta
+            inner join tbl_oferta_final
+                on tbl_oferta_final.id = tbl_coleta.id_oferta_final
+            inner join tbl_oferta_inicial
+                on tbl_oferta_inicial.id = tbl_oferta_final.id_oferta_inicial
+        set
+            tbl_coleta.nome_coletor = trim(nome_coletor_param),
+            tbl_coleta.placa_veiculo = trim(placa_veiculo_param),
+            tbl_coleta.data_coleta = data_coleta_param,
+            tbl_coleta.hora_coleta = hora_coleta_param
+            
+        where tbl_coleta.id = id_param
+          and tbl_oferta_inicial.id_empresa_coletora = id_empresa_coletora_param
+          and exists (
+              select 1
+              from tbl_status_coleta_historico
+                  inner join tbl_status_coleta
+                      on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+              where tbl_status_coleta_historico.id = (
+                  select max(historico.id)
+                  from tbl_status_coleta_historico as historico
+                  where tbl_coleta.id = historico.id_coleta
+              )
+              and tbl_status_coleta.status in (
+                  'Agendada',
+                  'Aguardando Finalização'
+              )
+          );
+        select row_count() as affectedRows;
 
     else
         signal sqlstate '45000'
         set message_text = 'Operação inválida na procColeta.';
     end if;
-
 END $$
 DELIMITER ;
 
@@ -1046,7 +1198,9 @@ create procedure procStatusColetaHistorico(
 )
 BEGIN
     declare id_status_agendada int default null;
+    declare id_status_concluida int default null;
     declare id_coleta_encontrada int default null;
+    declare status_atual varchar(30) default null;	
 
     if operacao = 'INSERT_AGENDADA' then
         -- Verifica se a coleta existe e bloqueia sua linha
@@ -1089,6 +1243,64 @@ BEGIN
         ) values (
             id_coleta_param,
             id_status_agendada
+        );
+        select last_insert_id() as id;
+        
+	elseif operacao = 'INSERT_CONCLUIDA' then
+        -- Verifica se a coleta existe, possui os dados necessários e bloqueia sua linha
+        select id into id_coleta_encontrada
+        from tbl_coleta
+        where id = id_coleta_param
+          and nome_coletor is not null
+          and trim(nome_coletor) <> ''
+          and placa_veiculo is not null
+          and trim(placa_veiculo) <> ''
+          and data_coleta is not null
+          and hora_coleta is not null
+        for update;
+
+        if id_coleta_encontrada is null then
+            signal sqlstate '45000'
+            set message_text = 'Coleta não encontrada ou com dados de finalização incompletos.';
+        end if;
+
+        -- Consulta e bloqueia o status mais recente da coleta
+        select tbl_status_coleta.status into status_atual
+        from tbl_status_coleta_historico
+            inner join tbl_status_coleta
+                on tbl_status_coleta.id = tbl_status_coleta_historico.id_status_coleta
+        where tbl_status_coleta_historico.id_coleta = id_coleta_param
+        order by tbl_status_coleta_historico.id desc
+        limit 1
+        for update;
+
+        -- Permite finalizar apenas coletas Agendadas ou Aguardando Finalização
+        if status_atual is null or status_atual not in (
+            'Agendada',
+            'Aguardando Finalização'
+        ) then
+            signal sqlstate '45000'
+            set message_text = 'Esta coleta não está disponível para finalização.';
+        end if;
+
+        -- Busca o ID do status Concluída
+        select id into id_status_concluida
+        from tbl_status_coleta
+        where status = 'Concluída'
+        limit 1;
+
+        if id_status_concluida is null then
+            signal sqlstate '45000'
+            set message_text = 'Status Concluída não encontrado.';
+        end if;
+
+        -- Insere o novo status no histórico da coleta
+        insert into tbl_status_coleta_historico (
+            id_coleta,
+            id_status_coleta
+        ) values (
+            id_coleta_param,
+            id_status_concluida
         );
         select last_insert_id() as id;
 
@@ -1615,6 +1827,45 @@ BEGIN
     else
         signal sqlstate '45000'
         set message_text = 'Operação inválida.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== PROCEDURE PARA A TELA DE COLETAS DA EMPRESA COLETORA ======
+DELIMITER $$
+create procedure procTelaColetasEmpresaColetora(
+    in operacao varchar(30),
+    in id_empresa_coletora_param int,
+    in id_coleta_param int
+)
+BEGIN
+    if operacao = 'SELECT_ALL' then
+        -- Consulta todas as coletas da empresa coletora autenticada
+        select
+            vw_coletas_empresa_coletora.*,
+            tbl_distancia.distancia
+        from vw_coletas_empresa_coletora
+			left join tbl_distancia
+				on tbl_distancia.id_estabelecimento = vw_coletas_empresa_coletora.id_estabelecimento
+				and tbl_distancia.id_empresa_coletora = vw_coletas_empresa_coletora.id_empresa_coletora
+        where vw_coletas_empresa_coletora.id_empresa_coletora = id_empresa_coletora_param
+        order by vw_coletas_empresa_coletora.id_coleta desc;
+
+    elseif operacao = 'SELECT_BY_ID' then
+        -- Consulta os detalhes de uma coleta agendada da empresa coletora
+        select
+            vw_detalhes_coleta_agendada_empresa_coletora.*,
+            tbl_distancia.distancia
+        from vw_detalhes_coleta_agendada_empresa_coletora
+			left join tbl_distancia
+				on tbl_distancia.id_estabelecimento = vw_detalhes_coleta_agendada_empresa_coletora.id_estabelecimento
+				and tbl_distancia.id_empresa_coletora = vw_detalhes_coleta_agendada_empresa_coletora.id_empresa_coletora
+        where vw_detalhes_coleta_agendada_empresa_coletora.id_empresa_coletora = id_empresa_coletora_param
+          and vw_detalhes_coleta_agendada_empresa_coletora.id_coleta = id_coleta_param;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procTelaColetasEmpresaColetora.';
     end if;
 END $$
 DELIMITER ;
