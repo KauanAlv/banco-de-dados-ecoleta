@@ -411,7 +411,7 @@ select * from vw_coletas_estabelecimento where id_estabelecimento = 1; # and id_
 create view vw_historico_estabelecimento as
 -- Resíduos cancelados
 select
-	tbl_estabelecimento.id as id_estabelecimento,
+	tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
     tbl_residuo.id as id_residuo, tbl_residuo.data_disponivel,
     null as id_empresa_coletora,
     null as nome_empresa_coletora,
@@ -443,7 +443,7 @@ and tbl_status_residuo.status = 'Cancelado'
 union all
 -- Coletas concluídas
 select
-    tbl_estabelecimento.id as id_estabelecimento,
+    tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
     tbl_residuo.id as id_residuo, tbl_residuo.data_disponivel,
     tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa_coletora,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
@@ -482,7 +482,6 @@ and tbl_status_coleta.status = 'Concluída';
 -- VIEW GERAL (PARA EXIBIR EM TODA A TELA)
 select * from vw_historico_estabelecimento where id_estabelecimento = 1 order by data_hora_evento desc;
 
-
 ### Complemento da View de cima ### (VIEW PARA OS RESIDUOS COM O STATUS DE CANCELADO)
 create view vw_detalhe_residuo_cancelado_estabelecimento as
 select
@@ -519,8 +518,6 @@ and tbl_status_residuo.status = 'Cancelado';
 -- ====== nome da view ======
 -- VIEW DE STATUS CANCELADO
 select * from vw_detalhe_residuo_cancelado_estabelecimento where id_residuo = 5 and id_estabelecimento = 4; # O id_residuo vai ser o residuo que pertence ao card, e o id_estabelecimento vai ser do que já vai estar logado
-
-
 
 ### Complemento da View de cima ### (VIEW PARA AS COLETAS COM STATUS DE CONCLUÍDA)
 create view vw_detalhe_coleta_concluida_estabelecimento as
@@ -1132,7 +1129,6 @@ select
     tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
     tbl_residuo.id as id_residuo, tbl_residuo.quantidade,
-    tbl_distancia.id as id_distancia, tbl_distancia.distancia,
     tbl_oferta_inicial.id as id_oferta_inicial, 
     tbl_oferta_final.id as id_oferta_final, 
     tbl_oferta_inicial.valor_ofertado as valor_acordado,
@@ -1152,9 +1148,6 @@ inner join tbl_tipo_material
     on tbl_tipo_material.id = tbl_residuo.id_tipo_material
 inner join tbl_empresa_coletora
     on tbl_empresa_coletora.id = tbl_oferta_inicial.id_empresa_coletora
-left join tbl_distancia
-    on tbl_estabelecimento.id = tbl_distancia.id_estabelecimento
-    and tbl_empresa_coletora.id = tbl_distancia.id_empresa_coletora
 inner join tbl_status_coleta_historico
     on tbl_coleta.id = tbl_status_coleta_historico.id_coleta
 inner join tbl_status_coleta
@@ -1173,7 +1166,6 @@ and tbl_status_coleta.status in (
 
 -- ====== nome da view ======
 select * from vw_coletas_empresa_coletora where id_empresa_coletora = 1; # no back colocar = ?;
-
 
 ### Complemento da View de cima ### (VIEW PARA OS DETALHES DA COLETA COM O STATUS DE AGENDADA)
 create view vw_detalhes_coleta_agendada_empresa_coletora as
@@ -1222,8 +1214,8 @@ and tbl_status_coleta.status = 'Agendada';
 select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 1 and id_coleta = 1; # no back colocar = ?; nos 2 numeros
 
 -- ====== para a tela de coletas, utilizar as 2 views ======
-select * from vw_coletas_empresa_coletora where id_empresa_coletora = 1; # view geral da tela
-select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 1 and id_coleta = 1; # view do botâo de detalhes da coleta
+select * from vw_coletas_empresa_coletora where id_empresa_coletora = 4; # view geral da tela
+select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 4 and id_coleta = 11; # view do botâo de detalhes da coleta
 
 ##################### Select para a tela de histórico da empresa coletora #####################
 -- VIEW GERAL (PARA EXIBIR EM TODA A TELA)
