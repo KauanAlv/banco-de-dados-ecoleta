@@ -412,14 +412,19 @@ create view vw_historico_estabelecimento as
 -- Resíduos cancelados
 select
 	tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
-    tbl_residuo.id as id_residuo, tbl_residuo.data_disponivel,
+    tbl_residuo.id as id_residuo, 
+    null as id_coleta,
+    null as id_oferta_inicial,
+	'Resíduo' as tipo_registro,
+    tbl_residuo.data_disponivel,
     null as id_empresa_coletora,
     null as nome_empresa_coletora,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
     tbl_residuo.quantidade,
-    null as id_oferta_inicial,
     null as valor_acordado,
-    'Cancelado' as status,
+    tbl_status_residuo.id as id_status_residuo,
+    null as id_status_coleta,
+    tbl_status_residuo.status as status_historico,
     tbl_status_residuo_historico.data_hora_status as data_hora_evento
     
 from tbl_residuo
@@ -444,12 +449,17 @@ union all
 -- Coletas concluídas
 select
     tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_estabelecimento,
-    tbl_residuo.id as id_residuo, tbl_residuo.data_disponivel,
+    tbl_residuo.id as id_residuo,
+    tbl_coleta.id as id_coleta,
+    tbl_oferta_inicial.id as id_oferta_inicial,
+    'Coleta' as tipo_registro,
+    tbl_residuo.data_disponivel,
     tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa_coletora,
     tbl_tipo_material.id as id_tipo_material, tbl_tipo_material.material,
     tbl_residuo.quantidade,
-    tbl_oferta_inicial.id as id_oferta_inicial, tbl_oferta_inicial.valor_ofertado as valor_acordado,
-    'Concluída' as status,
+    tbl_oferta_inicial.valor_ofertado as valor_acordado,
+    null as id_status_residuo,
+    tbl_status_coleta.id as id_status_coleta, tbl_status_coleta.status as status_historico,
     tbl_status_coleta_historico.data_hora_status as data_hora_evento
 
 from tbl_coleta
@@ -1403,11 +1413,12 @@ select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_cole
 create view vw_perfil_empresa_coletora as
 select
 	tbl_empresa_coletora.id as id_empresa_coletora, tbl_empresa_coletora.nome as nome_empresa, tbl_empresa_coletora.cnpj,
-    tbl_email.id as id_email, tbl_email.email,
     tbl_telefone.id as id_telefone, tbl_telefone.numero as telefone,
-    tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro, tbl_endereco.numero, tbl_endereco.bairro,
-    tbl_estado.id as id_estado, tbl_estado.sigla,
-	tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade
+    tbl_email.id as id_email, tbl_email.email,
+    tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro, tbl_endereco.numero,
+    tbl_estado.id as id_estado, upper(tbl_estado.sigla) as sigla, tbl_estado.nome_estado,
+    tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade,
+    tbl_endereco.bairro
     
 from tbl_empresa_coletora
 	inner join tbl_email
