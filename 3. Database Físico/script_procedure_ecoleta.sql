@@ -1834,9 +1834,9 @@ DELIMITER ;
 -- ====== PROCEDURE PARA A TELA DE COLETAS DA EMPRESA COLETORA ======
 DELIMITER $$
 create procedure procTelaColetasEmpresaColetora(
-    in operacao varchar(30),
-    in id_empresa_coletora_param int,
-    in id_coleta_param int
+    IN operacao varchar(30),
+    IN id_empresa_coletora_param int,
+    IN id_coleta_param int
 )
 BEGIN
     if operacao = 'SELECT_ALL' then
@@ -1866,6 +1866,34 @@ BEGIN
     else
         signal sqlstate '45000'
         set message_text = 'Operação inválida na procTelaColetasEmpresaColetora.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== PROCEDURE PARA A TELA DE HISTÓRICO DA EMPRESA COLETORA ======
+DELIMITER $$
+create procedure procTelaHistoricoEmpresaColetora(
+    IN operacao varchar(30),
+    IN id_empresa_coletora_param int,
+    IN id_coleta_param int,
+    IN id_oferta_inicial_param int
+)
+BEGIN
+    if operacao = 'SELECT_ALL' then
+        -- Consulta todas as coletas concluídas e ofertas recusadas da empresa coletora
+        select * from vw_historico_empresa_coletora where id_empresa_coletora = id_empresa_coletora_param order by data_hora_evento desc;
+
+    elseif operacao = 'SELECT_COLETA_BY_ID' then
+        -- Consulta os detalhes de uma coleta concluída da empresa coletora
+        select * from vw_detalhes_coleta_concluida_empresa_coletora where id_empresa_coletora = id_empresa_coletora_param and id_coleta = id_coleta_param;
+
+    elseif operacao = 'SELECT_OFERTA_BY_ID' then
+        -- Consulta os detalhes de uma oferta recusada da empresa coletora
+        select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_coletora = id_empresa_coletora_param and id_oferta_inicial = id_oferta_inicial_param;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procTelaHistoricoEmpresaColetora.';
     end if;
 END $$
 DELIMITER ;
