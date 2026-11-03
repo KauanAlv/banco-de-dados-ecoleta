@@ -1311,6 +1311,162 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- ====== PROCEDURE PARA A TELA DE PERFIL DO ESTABELECIMENTO ======
+DELIMITER $$
+create procedure procPerfilEstabelecimento(
+    IN operacao varchar(30),
+    IN id_estabelecimento_param int,
+    IN nome_param varchar(100),
+    IN telefone_param varchar(25),
+    IN email_param varchar(256),
+    IN cep_param varchar(12),
+    IN logradouro_param varchar(100),
+    IN numero_param int,
+    IN bairro_param varchar(80),
+    IN latitude_param decimal(10,7),
+    IN longitude_param decimal(10,7),
+    IN id_cidade_param int
+)
+BEGIN
+    if operacao = 'SELECT_BY_ID' then
+        -- Consulta os dados do perfil do estabelecimento autenticado
+        select * from vw_perfil_estabelecimento
+        where id_estabelecimento = id_estabelecimento_param;
+
+    elseif operacao = 'SELECT_FOR_UPDATE' then
+        -- Consulta e bloqueia os dados do estabelecimento durante a transação
+        select
+            tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.id_email, tbl_estabelecimento.id_telefone, tbl_estabelecimento.id_endereco,
+            tbl_endereco.cep, tbl_endereco.numero, tbl_endereco.latitude, tbl_endereco.longitude, tbl_endereco.id_cidade
+        from tbl_estabelecimento
+            inner join tbl_endereco
+                on tbl_endereco.id = tbl_estabelecimento.id_endereco
+        where tbl_estabelecimento.id = id_estabelecimento_param
+        for update;
+
+    elseif operacao = 'SELECT_EMPRESAS_COLETORAS' then
+        -- Consulta as empresas coletoras vinculadas ao estabelecimento e suas coordenadas para recalcular as distâncias
+        select
+            tbl_distancia.id as id_distancia,
+            tbl_empresa_coletora.id as id_empresa_coletora,
+            tbl_endereco.latitude, tbl_endereco.longitude
+        from tbl_distancia
+            inner join tbl_empresa_coletora
+                on tbl_empresa_coletora.id = tbl_distancia.id_empresa_coletora
+            inner join tbl_endereco
+                on tbl_endereco.id = tbl_empresa_coletora.id_endereco
+        where tbl_distancia.id_estabelecimento = id_estabelecimento_param
+        order by tbl_distancia.id_empresa_coletora;
+
+    elseif operacao = 'UPDATE' then
+        -- Verifica se os campos obrigatórios foram informados
+        if nome_param is null or trim(nome_param) = ''
+            or telefone_param is null or trim(telefone_param) = ''
+            or email_param is null or trim(email_param) = ''
+            or cep_param is null or trim(cep_param) = ''
+            or logradouro_param is null or trim(logradouro_param) = ''
+            or numero_param is null
+            or bairro_param is null or trim(bairro_param) = ''
+            or latitude_param is null
+            or longitude_param is null
+            or id_cidade_param is null then
+
+            signal sqlstate '45000'
+            set message_text = 'Dados obrigatórios do perfil não informados.';
+        end if;
+
+        -- Verifica se o estabelecimento existe
+        if not exists (
+            select 1
+            from tbl_estabelecimento
+            where id = id_estabelecimento_param
+        ) then
+            signal sqlstate '45000'
+            set message_text = 'Estabelecimento não encontrado.';
+        end if;
+
+        -- Atualiza somente o nome do estabelecimento
+        update tbl_estabelecimento
+        set nome = trim(nome_param)
+        where id = id_estabelecimento_param;
+
+        -- Atualiza o telefone vinculado ao estabelecimento
+        update tbl_telefone
+            inner join tbl_estabelecimento
+                on tbl_estabelecimento.id_telefone = tbl_telefone.id
+        set tbl_telefone.numero = trim(telefone_param)
+        where tbl_estabelecimento.id = id_estabelecimento_param;
+
+        -- Atualiza o e-mail vinculado ao estabelecimento
+        update tbl_email
+            inner join tbl_estabelecimento
+                on tbl_estabelecimento.id_email = tbl_email.id
+        set tbl_email.email = trim(email_param)
+        where tbl_estabelecimento.id = id_estabelecimento_param;
+
+        -- Atualiza o endereço existente, preservando seu ID
+        update tbl_endereco
+            inner join tbl_estabelecimento
+                on tbl_estabelecimento.id_endereco = tbl_endereco.id
+        set
+            tbl_endereco.cep = cep_param,
+            tbl_endereco.logradouro = trim(logradouro_param),
+            tbl_endereco.numero = numero_param,
+            tbl_endereco.bairro = trim(bairro_param),
+            tbl_endereco.latitude = latitude_param,
+            tbl_endereco.longitude = longitude_param,
+            tbl_endereco.id_cidade = id_cidade_param
+        where tbl_estabelecimento.id = id_estabelecimento_param;
+
+        select 1 as affectedRows;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procPerfilEstabelecimento.';
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== PROCEDURE PARA ALTERAR A SENHA DO ESTABELECIMENTO ======
+DELIMITER $$
+create procedure procAlterarSenhaEstabelecimento(
+    IN operacao varchar(30),
+    IN id_estabelecimento_param int,
+    IN senha_hash_param varchar(512),
+    IN senha_hash_atual_param varchar(512)
+)
+BEGIN
+
+    if operacao = 'SELECT_FOR_UPDATE' then
+        -- Consulta e bloqueia o estabelecimento durante a transação
+        select
+            id as id_estabelecimento, senha_hash
+        from tbl_estabelecimento
+        where id = id_estabelecimento_param
+        for update;
+
+    elseif operacao = 'UPDATE_SENHA' then
+        -- Verifica se o novo hash foi informado
+        if senha_hash_param is null or trim(senha_hash_param) = '' then
+            signal sqlstate '45000'
+            set message_text = 'A nova senha não foi informada.';
+        end if;
+
+        -- Atualiza somente a senha do estabelecimento
+        update tbl_estabelecimento
+        set senha_hash = senha_hash_param
+        where id = id_estabelecimento_param
+          and senha_hash = senha_hash_atual_param;
+
+        select row_count() as affectedRows;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procAlterarSenhaEstabelecimento.';
+    end if;
+END $$
+DELIMITER ;
+
 
 -- -----------------------------------------------------
 -- ---              EMPRESA COLETORA              ------
@@ -2009,6 +2165,46 @@ BEGIN
         signal sqlstate '45000'
         set message_text = 'Operação inválida na procPerfilEmpresaColetora.';
 
+    end if;
+END $$
+DELIMITER ;
+
+-- ====== PROCEDURE PARA ALTERAR A SENHA DA EMPRESA COLETORA ======
+DELIMITER $$
+create procedure procAlterarSenhaEmpresaColetora(
+    IN operacao varchar(30),
+    IN id_empresa_coletora_param int,
+    IN senha_hash_param varchar(512),
+    IN senha_hash_atual_param varchar(512)
+)
+BEGIN
+
+    if operacao = 'SELECT_FOR_UPDATE' then
+        -- Consulta e bloqueia a empresa coletora durante a transação
+        select
+            id as id_empresa_coletora, senha_hash
+        from tbl_empresa_coletora
+        where id = id_empresa_coletora_param
+        for update;
+
+    elseif operacao = 'UPDATE_SENHA' then
+        -- Verifica se o novo hash foi informado
+        if senha_hash_param is null or trim(senha_hash_param) = '' then
+            signal sqlstate '45000'
+            set message_text = 'A nova senha não foi informada.';
+        end if;
+
+        -- Atualiza somente a senha da empresa coletora
+        update tbl_empresa_coletora
+        set senha_hash = senha_hash_param
+        where id = id_empresa_coletora_param
+          and senha_hash = senha_hash_atual_param;
+
+        select row_count() as affectedRows;
+
+    else
+        signal sqlstate '45000'
+        set message_text = 'Operação inválida na procAlterarSenhaEmpresaColetora.';
     end if;
 END $$
 DELIMITER ;
