@@ -594,11 +594,13 @@ select * from vw_detalhe_coleta_concluida_estabelecimento where id_coleta = 3 an
 create view vw_perfil_estabelecimento as
 select
 	tbl_estabelecimento.id as id_estabelecimento, tbl_estabelecimento.nome as nome_empresa, tbl_estabelecimento.cnpj,
-    tbl_email.id as id_email, tbl_email.email,
     tbl_telefone.id as id_telefone, tbl_telefone.numero as telefone,
-    tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro, tbl_endereco.numero, tbl_endereco.bairro,
-    tbl_estado.id as id_estado, tbl_estado.sigla,
-	tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade
+    tbl_email.id as id_email, tbl_email.email,
+    
+    tbl_endereco.id as id_endereco, tbl_endereco.cep, tbl_endereco.logradouro, tbl_endereco.numero,
+    tbl_estado.id as id_estado, upper(tbl_estado.sigla) as sigla, tbl_estado.nome_estado,
+	tbl_cidade.id as id_cidade, tbl_cidade.nome_cidade,
+    tbl_endereco.bairro
     
 from tbl_estabelecimento
 	inner join tbl_email
