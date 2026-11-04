@@ -161,7 +161,7 @@ select
 from tbl_estabelecimento;
 
 -- ====== nome da view ======
-select * from vw_home_estabelecimento where id_estabelecimento = 1;
+#select * from vw_home_estabelecimento where id_estabelecimento = 1;
 
 ### Complemento da View de cima ###
 create view vw_home_ofertas_estabelecimento as
@@ -206,11 +206,11 @@ where tbl_status_oferta_historico.id in (
 and tbl_status_oferta.status = 'Pendente';
 
 -- ====== nome da view ======
-select * from vw_home_ofertas_estabelecimento where id_estabelecimento = 1;
+#select * from vw_home_ofertas_estabelecimento where id_estabelecimento = 1;
 
 -- ====== para o resumo da tela home, utilizar as 2 views ======
-select * from vw_home_estabelecimento where id_estabelecimento = 1;
-select * from vw_home_ofertas_estabelecimento where id_estabelecimento = 1;
+#select * from vw_home_estabelecimento where id_estabelecimento = 1;
+#select * from vw_home_ofertas_estabelecimento where id_estabelecimento = 1;
 
 
 ##################### Select para a tela meus resíduos do estabelecimento #####################
@@ -292,7 +292,7 @@ and not exists (
 );
 
 -- ====== nome da view ======
-select * from vw_meus_residuos_estabelecimento where id_estabelecimento = 1;
+#select * from vw_meus_residuos_estabelecimento where id_estabelecimento = 1;
 
 ### Complemento da View de cima ###
 create view vw_coleta_residuo_estabelecimento as
@@ -343,11 +343,11 @@ where tbl_status_coleta_historico.id in (
 and tbl_status_coleta.status = 'Agendada';
 
 -- ====== nome da view ======
-select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and id_residuo = 2;
+#select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and id_residuo = 2;
   
 -- ====== para a tela de meus resíduos, utilizar as 2 views ======
-select * from vw_meus_residuos_estabelecimento where id_estabelecimento = 1;
-select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and id_residuo = 2;
+#select * from vw_meus_residuos_estabelecimento where id_estabelecimento = 1;
+#select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and id_residuo = 2;
 
 
 ##################### Select para a Coleta do Estabelecimento #####################
@@ -403,7 +403,7 @@ and not exists (
 );
 
 -- ====== nome da view ======
-select * from vw_coletas_estabelecimento where id_estabelecimento = 1; # and id_oferta_inicial = 1; #Isso é para filtrar pelo id da oferta
+#select * from vw_coletas_estabelecimento where id_estabelecimento = 1; # and id_oferta_inicial = 1; #Isso é para filtrar pelo id da oferta
 
 
 ##################### Select para o Histórico do Estabelecimento #####################
@@ -490,7 +490,7 @@ and tbl_status_coleta.status = 'Concluída';
 
 -- ====== nome da view ======
 -- VIEW GERAL (PARA EXIBIR EM TODA A TELA)
-select * from vw_historico_estabelecimento where id_estabelecimento = 1 order by data_hora_evento desc;
+#select * from vw_historico_estabelecimento where id_estabelecimento = 1 order by data_hora_evento desc;
 
 ### Complemento da View de cima ### (VIEW PARA OS RESIDUOS COM O STATUS DE CANCELADO)
 create view vw_detalhe_residuo_cancelado_estabelecimento as
@@ -527,7 +527,7 @@ and tbl_status_residuo.status = 'Cancelado';
 
 -- ====== nome da view ======
 -- VIEW DE STATUS CANCELADO
-select * from vw_detalhe_residuo_cancelado_estabelecimento where id_residuo = 5 and id_estabelecimento = 4; # O id_residuo vai ser o residuo que pertence ao card, e o id_estabelecimento vai ser do que já vai estar logado
+#select * from vw_detalhe_residuo_cancelado_estabelecimento where id_residuo = 5 and id_estabelecimento = 4; # O id_residuo vai ser o residuo que pertence ao card, e o id_estabelecimento vai ser do que já vai estar logado
 
 ### Complemento da View de cima ### (VIEW PARA AS COLETAS COM STATUS DE CONCLUÍDA)
 create view vw_detalhe_coleta_concluida_estabelecimento as
@@ -581,12 +581,12 @@ and tbl_status_coleta.status = 'Concluída';
 
 -- ====== nome da view ======
 -- VIEW DE STATUS CONCLUÍDA
-select * from vw_detalhe_coleta_concluida_estabelecimento where id_coleta = 3 and id_estabelecimento = 1;
+#select * from vw_detalhe_coleta_concluida_estabelecimento where id_coleta = 3 and id_estabelecimento = 1;
 
 -- ====== para a tela de histórico, utilizar as 3 views ======
-select * from vw_historico_estabelecimento where id_estabelecimento = 4; # VIEW GERAL
-select * from vw_detalhe_residuo_cancelado_estabelecimento where id_residuo = 5 and id_estabelecimento = 4; # VIEW DE CANCELADO
-select * from vw_detalhe_coleta_concluida_estabelecimento where id_coleta = 3 and id_estabelecimento = 1; # VIEW DE CONCLUÍDA
+#select * from vw_historico_estabelecimento where id_estabelecimento = 4; # VIEW GERAL
+#select * from vw_detalhe_residuo_cancelado_estabelecimento where id_residuo = 5 and id_estabelecimento = 4; # VIEW DE CANCELADO
+#select * from vw_detalhe_coleta_concluida_estabelecimento where id_coleta = 3 and id_estabelecimento = 1; # VIEW DE CONCLUÍDA
 
 
 ##################### Select para o Perfil do Estabelecimento #####################
@@ -615,35 +615,35 @@ from tbl_estabelecimento
 		on tbl_estado.id = tbl_cidade.id_estado;
 
 -- ====== nome da view ======
-select * from vw_perfil_estabelecimento where id_estabelecimento = 1;
+#select * from vw_perfil_estabelecimento where id_estabelecimento = 1;
 
 
 ###########################################################################################
 -- TODAS AS VIEWS DO ESTABELECIMENTO:
 ## HOME ##
 -- ====== para o resumo da tela home, utilizar as 2 views ======
-select * from vw_home_estabelecimento where id_estabelecimento = 1;
-select * from vw_home_ofertas_estabelecimento where id_estabelecimento = 1;
+#select * from vw_home_estabelecimento where id_estabelecimento = 1;
+#select * from vw_home_ofertas_estabelecimento where id_estabelecimento = 1;
 
 ## RESÍDUOS ##
 -- ====== para a tela de meus resíduos, utilizar as 2 views ======
-select * from vw_meus_residuos_estabelecimento where id_estabelecimento = 1;
-select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and id_residuo = 2;
+#select * from vw_meus_residuos_estabelecimento where id_estabelecimento = 1;
+#select * from vw_coleta_residuo_estabelecimento where id_estabelecimento = 2 and id_residuo = 2;
 
 ## COLETAS ##
 -- ====== para a tela de coletas, utilizar a view  ======
-select * from vw_coletas_estabelecimento;
-select * from vw_coletas_estabelecimento where id_oferta_inicial = 1; #Isso é para filtrar pelo id da oferta
+#select * from vw_coletas_estabelecimento;
+#select * from vw_coletas_estabelecimento where id_oferta_inicial = 1; #Isso é para filtrar pelo id da oferta
 
 ## HISTÓRICO ## 
 -- ====== para a tela de histórico, utilizar as 3 views ======
-select * from vw_historico_estabelecimento where id_estabelecimento = 4 order by data_hora_evento desc; # VIEW GERAL
-select * from vw_detalhe_residuo_cancelado_estabelecimento where id_residuo = 5 and id_estabelecimento = 4; # VIEW DE CANCELADO
-select * from vw_detalhe_coleta_concluida_estabelecimento where id_coleta = 3 and id_estabelecimento = 1; # VIEW DE CONCLUÍDA
+#select * from vw_historico_estabelecimento where id_estabelecimento = 4 order by data_hora_evento desc; # VIEW GERAL
+#select * from vw_detalhe_residuo_cancelado_estabelecimento where id_residuo = 5 and id_estabelecimento = 4; # VIEW DE CANCELADO
+#select * from vw_detalhe_coleta_concluida_estabelecimento where id_coleta = 3 and id_estabelecimento = 1; # VIEW DE CONCLUÍDA
 
 ## PERFIL ##
 -- ====== para a tela de perfil, utilizar a view  ======
-select * from vw_perfil_estabelecimento where id_estabelecimento = 1;
+#select * from vw_perfil_estabelecimento where id_estabelecimento = 1;
 ###########################################################################################
 
 
@@ -842,7 +842,7 @@ select
 from tbl_empresa_coletora;
 
 -- ====== nome da view ======
-select * from vw_home_empresa_coletora where id_empresa_coletora = 1;
+#select * from vw_home_empresa_coletora where id_empresa_coletora = 1;
 
 ### Complemento da View de cima ###
 create view vw_home_ofertas_empresa_coletora as
@@ -932,11 +932,11 @@ and (
 );
 
 -- ====== nome da view ======
-select * from vw_home_ofertas_empresa_coletora where id_empresa_coletora = 1;
+#select * from vw_home_ofertas_empresa_coletora where id_empresa_coletora = 1;
 
 -- ====== para o resumo da tela home, utilizar as 2 views ======
-select * from vw_home_empresa_coletora where id_empresa_coletora = 1;
-select * from vw_home_ofertas_empresa_coletora where id_empresa_coletora = 1;
+#select * from vw_home_empresa_coletora where id_empresa_coletora = 1;
+#select * from vw_home_ofertas_empresa_coletora where id_empresa_coletora = 1;
 
 
 ##################### Select para a tela de estabelecimentos da empresa coletora #####################
@@ -1109,27 +1109,27 @@ where tbl_status_coleta_historico.id in (
 and tbl_status_coleta.status in ('Agendada');
 
 -- ====== nome da view ======
-select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1;
+#select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1;
 
 -- ====== para a tela de residuos disponíveis, utilizar as 3 views ======
-select
-	vw_residuos_empresa_coletora.*,
-	tbl_distancia.distancia
-from vw_residuos_empresa_coletora
-	left join tbl_distancia
-		on tbl_distancia.id_estabelecimento = vw_residuos_empresa_coletora.id_estabelecimento
-		and tbl_distancia.id_empresa_coletora = 1; # VIEW GERAL, ? Para usar no backend
+#select
+#	vw_residuos_empresa_coletora.*,
+#	tbl_distancia.distancia
+#from vw_residuos_empresa_coletora
+#	left join tbl_distancia
+#		on tbl_distancia.id_estabelecimento = vw_residuos_empresa_coletora.id_estabelecimento
+#		and tbl_distancia.id_empresa_coletora = 1; # VIEW GERAL, ? Para usar no backend
         
-select
-    vw_residuos_disponiveis_empresa_coletora.*,
-    tbl_distancia.distancia
-from vw_residuos_disponiveis_empresa_coletora
-	left join tbl_distancia
-		on tbl_distancia.id_estabelecimento = vw_residuos_disponiveis_empresa_coletora.id_estabelecimento
-		and tbl_distancia.id_empresa_coletora = 1
-where vw_residuos_disponiveis_empresa_coletora.id_residuo = 1; # VIEW DE DISPONÍVEIS, ? Para usar no backend
+#select
+#    vw_residuos_disponiveis_empresa_coletora.*,
+#    tbl_distancia.distancia
+#from vw_residuos_disponiveis_empresa_coletora
+#	left join tbl_distancia
+#		on tbl_distancia.id_estabelecimento = vw_residuos_disponiveis_empresa_coletora.id_estabelecimento
+#		and tbl_distancia.id_empresa_coletora = 1
+#where vw_residuos_disponiveis_empresa_coletora.id_residuo = 1; # VIEW DE DISPONÍVEIS, ? Para usar no backend
 
-select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1; # VIEW DE AGENDADO
+#select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1; # VIEW DE AGENDADO
 
 
 ##################### Select para a tela de coletas da empresa coletora #####################
@@ -1177,7 +1177,7 @@ and tbl_status_coleta.status in (
 );
 
 -- ====== nome da view ======
-select * from vw_coletas_empresa_coletora where id_empresa_coletora = 1; # no back colocar = ?;
+#select * from vw_coletas_empresa_coletora where id_empresa_coletora = 1; # no back colocar = ?;
 
 ### Complemento da View de cima ### (VIEW PARA OS DETALHES DA COLETA COM O STATUS DE AGENDADA)
 create view vw_detalhes_coleta_agendada_empresa_coletora as
@@ -1223,11 +1223,11 @@ where tbl_status_coleta_historico.id in (
 and tbl_status_coleta.status = 'Agendada';
 
 -- ====== nome da view ======
-select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 1 and id_coleta = 1; # no back colocar = ?; nos 2 numeros
+#select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 1 and id_coleta = 1; # no back colocar = ?; nos 2 numeros
 
 -- ====== para a tela de coletas, utilizar as 2 views ======
-select * from vw_coletas_empresa_coletora where id_empresa_coletora = 4; # view geral da tela
-select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 4 and id_coleta = 11; # view do botâo de detalhes da coleta
+#select * from vw_coletas_empresa_coletora where id_empresa_coletora = 4; # view geral da tela
+#select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 4 and id_coleta = 11; # view do botâo de detalhes da coleta
 
 ##################### Select para a tela de histórico da empresa coletora #####################
 -- VIEW GERAL (PARA EXIBIR EM TODA A TELA)
@@ -1316,7 +1316,7 @@ where tbl_status_oferta_historico.id in (
 and tbl_status_oferta.status = 'Recusada';
 
 -- ====== nome da view ======
-select * from vw_historico_empresa_coletora where id_empresa_coletora = 2 order by data_hora_evento desc;
+#select * from vw_historico_empresa_coletora where id_empresa_coletora = 2 order by data_hora_evento desc;
 
 ### Complemento da View de cima ### (VIEW PARA OS DETALHES DA COLETA COM O STATUS DE CONCLUÍDA)
 create view vw_detalhes_coleta_concluida_empresa_coletora as
@@ -1365,7 +1365,7 @@ where tbl_status_coleta_historico.id in (
 and tbl_status_coleta.status = 'Concluída';
 
 -- ====== nome da view ======
-select * from vw_detalhes_coleta_concluida_empresa_coletora where id_empresa_coletora = 2 and id_coleta = 2;
+#select * from vw_detalhes_coleta_concluida_empresa_coletora where id_empresa_coletora = 2 and id_coleta = 2;
 
 ### Complemento da View de cima ### (VIEW PARA OS DETALHES DA OFERTA COM O STATUS DE RECUSADA)
 create view vw_detalhes_oferta_recusada_empresa_coletora as
@@ -1402,12 +1402,12 @@ where tbl_status_oferta_historico.id in (
 and tbl_status_oferta.status = 'Recusada';
 
 -- ====== nome da view ======
-select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_coletora = 2 and id_oferta_inicial = 5;
+#select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_coletora = 2 and id_oferta_inicial = 5;
 
 -- ====== para a tela de histórico, utilizar as 3 views ======
-select * from vw_historico_empresa_coletora where id_empresa_coletora = 2; # VIEW GERAL
-select * from vw_detalhes_coleta_concluida_empresa_coletora where id_empresa_coletora = 2 and id_coleta = 2; # VIEW DE COLETA CONCLUÍDA
-select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_coletora = 2 and id_oferta_inicial = 5; # VIEW DE OFERTA RECUSADA
+#select * from vw_historico_empresa_coletora where id_empresa_coletora = 2; # VIEW GERAL
+#select * from vw_detalhes_coleta_concluida_empresa_coletora where id_empresa_coletora = 2 and id_coleta = 2; # VIEW DE COLETA CONCLUÍDA
+#select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_coletora = 2 and id_oferta_inicial = 5; # VIEW DE OFERTA RECUSADA
 
 
 ##################### Select para o perfil da empresa coletora #####################
@@ -1435,63 +1435,63 @@ from tbl_empresa_coletora
 		on tbl_estado.id = tbl_cidade.id_estado;
 
 -- ====== nome da view ======
-select * from vw_perfil_empresa_coletora where id_empresa_coletora = 1;
+#select * from vw_perfil_empresa_coletora where id_empresa_coletora = 1;
 
 
 ###########################################################################################
 -- TODAS AS VIEWS DA EMPRESA COLETORA:
 ## HOME ##
 -- ====== para o resumo da tela home, utilizar as 2 views ======
-select * from vw_home_empresa_coletora where id_empresa_coletora = 1;
-select * from vw_home_ofertas_empresa_coletora where id_empresa_coletora = 1;
+#select * from vw_home_empresa_coletora where id_empresa_coletora = 1;
+#select * from vw_home_ofertas_empresa_coletora where id_empresa_coletora = 1;
 
 ## ESTABELECIMENTOS ##
 -- ====== para a tela de meus resíduos, utilizar as 2 views ======
-select 
-	vw_estabelecimentos_empresa_coletora.*,
-    tbl_distancia.distancia
-from vw_estabelecimentos_empresa_coletora
-	left join tbl_distancia
-		on tbl_distancia.id_estabelecimento = vw_estabelecimentos_empresa_coletora.id_estabelecimento
-		and tbl_distancia.id_empresa_coletora = 1; # No back colocar = ?; (significa que é igual ao id da empresa logada)
+#select 
+#	vw_estabelecimentos_empresa_coletora.*,
+#    tbl_distancia.distancia
+#from vw_estabelecimentos_empresa_coletora
+#	left join tbl_distancia
+#		on tbl_distancia.id_estabelecimento = vw_estabelecimentos_empresa_coletora.id_estabelecimento
+#		and tbl_distancia.id_empresa_coletora = 1; # No back colocar = ?; (significa que é igual ao id da empresa logada)
 
 ## RESÍDUOS DISPONÍVEIS ##
 -- ====== para a tela de meus resíduos, utilizar as 2 views ======
-select
-	vw_residuos_empresa_coletora.*,
-	tbl_distancia.distancia
-from vw_residuos_empresa_coletora
-	left join tbl_distancia
-		on tbl_distancia.id_estabelecimento = vw_residuos_empresa_coletora.id_estabelecimento
-		and tbl_distancia.id_empresa_coletora = 1; # VIEW GERAL, ? Para usar no backend
+#select
+#	vw_residuos_empresa_coletora.*,
+#	tbl_distancia.distancia
+#from vw_residuos_empresa_coletora
+#	left join tbl_distancia
+#		on tbl_distancia.id_estabelecimento = vw_residuos_empresa_coletora.id_estabelecimento
+#		and tbl_distancia.id_empresa_coletora = 1; # VIEW GERAL, ? Para usar no backend
         
-select
-    vw_residuos_disponiveis_empresa_coletora.*,
-    tbl_distancia.distancia
-from vw_residuos_disponiveis_empresa_coletora
-	left join tbl_distancia
-		on tbl_distancia.id_estabelecimento = vw_residuos_disponiveis_empresa_coletora.id_estabelecimento
-		and tbl_distancia.id_empresa_coletora = 1
-where vw_residuos_disponiveis_empresa_coletora.id_residuo = 1; # VIEW DE DISPONÍVEIS, ? Para usar no backend
+#select
+#    vw_residuos_disponiveis_empresa_coletora.*,
+#    tbl_distancia.distancia
+#from vw_residuos_disponiveis_empresa_coletora
+#	left join tbl_distancia
+#		on tbl_distancia.id_estabelecimento = vw_residuos_disponiveis_empresa_coletora.id_estabelecimento
+#		and tbl_distancia.id_empresa_coletora = 1
+#where vw_residuos_disponiveis_empresa_coletora.id_residuo = 1; # VIEW DE DISPONÍVEIS, ? Para usar no backend
 
-select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1; # VIEW DE AGENDADO
+#select * from vw_coleta_residuo_empresa_coletora where id_residuo = 2 and id_empresa_coletora = 1; # VIEW DE AGENDADO
 
 ## COLETAS ##
 -- ====== para a tela de coletas, utilizar a view  ======
-select * from vw_coletas_empresa_coletora where id_empresa_coletora = 1; # view geral da tela
-select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 1 and id_coleta = 1; # view do botâo de detalhes da coleta
+#select * from vw_coletas_empresa_coletora where id_empresa_coletora = 1; # view geral da tela
+#select * from vw_detalhes_coleta_agendada_empresa_coletora where id_empresa_coletora = 1 and id_coleta = 1; # view do botâo de detalhes da coleta
 
 ## HISTÓRICO ## 
 -- ====== para a tela de histórico, utilizar as 3 views ======
-select * from vw_historico_empresa_coletora where id_empresa_coletora = 2 order by data_hora_evento desc; # VIEW GERAL
-select * from vw_detalhes_coleta_concluida_empresa_coletora where id_empresa_coletora = 2 and id_coleta = 2; # VIEW DE COLETA CONCLUÍDA
-select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_coletora = 2 and id_oferta_inicial = 5; # VIEW DE OFERTA RECUSADA
+#select * from vw_historico_empresa_coletora where id_empresa_coletora = 2 order by data_hora_evento desc; # VIEW GERAL
+#select * from vw_detalhes_coleta_concluida_empresa_coletora where id_empresa_coletora = 2 and id_coleta = 2; # VIEW DE COLETA CONCLUÍDA
+#select * from vw_detalhes_oferta_recusada_empresa_coletora where id_empresa_coletora = 2 and id_oferta_inicial = 5; # VIEW DE OFERTA RECUSADA
 
 ## PERFIL ##
 -- ====== para a tela de perfil, utilizar a view  ======
-select * from vw_perfil_empresa_coletora where id_empresa_coletora = 1;
+#select * from vw_perfil_empresa_coletora where id_empresa_coletora = 1;
 ###########################################################################################
-#-- para consultar todas as views
+-- para consultar todas as views
 #SELECT count(TABLE_NAME) as total_views
 #FROM information_schema.VIEWS 
 #WHERE TABLE_SCHEMA = 'db_tcc_ecoleta';
